@@ -253,6 +253,7 @@ export default function Home() {
   // -----------------------------------------
 
   return (
+    <>
     <main className="container">
       {/* Header */}
       <header className="header">
@@ -459,5 +460,32 @@ export default function Home() {
         </section>
       )}
       </main>
+
+      {/* Footer */}
+      <footer className="footer-section">
+        <div className="footer-content">
+          <img 
+            src="/my-photo.png" 
+            alt="Founder photo" 
+            className="footer-photo"
+          />
+          
+          <div className="footer-text">
+            <p>
+              Hi, I&apos;m Alessandro, an indie designer exploring tools for small venues and indie promoters. 
+              I created this free settlement calculator because so many people still struggle 
+              with spreadsheets and inconsistent deal sheets.
+            </p>
+            <p className="footer-email">
+              If you have questions, ideas, or requests, email me directly at
+              <a href="mailto:abattisti@proton.me">
+                abattisti@proton.me
+              </a>.
+            </p>
+            <p className="footer-cheers">Cheers!</p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }
