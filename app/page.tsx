@@ -258,7 +258,10 @@ export default function Home() {
       {/* Header */}
       <header className="header">
         <h1>Show Settlement Calculator</h1>
-        <p>Quickly calculate artist and venue payouts for a live show.</p>
+        <p>Quickly calculate artist and venue payouts for a live show.
+        <br /> <br />
+        For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown.
+        </p>
       </header>
 
       {/* Section 1: Input Form */}
