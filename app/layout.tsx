@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Show Settlement Calculator",
-  description: "Quickly calculate artist and venue payouts for a live show",
+  description: "Quickly calculate artist and venue payouts for a live show. </br> </br>  For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown.",
 };
 
 export default function RootLayout({
