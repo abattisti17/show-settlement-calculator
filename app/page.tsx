@@ -26,7 +26,7 @@ interface FormData {
   artistName: string;        // Name of the artist/band (optional, for display)
   ticketPrice: string;       // Price per ticket in dollars
   ticketsSold: string;       // Number of tickets sold
-  taxRate: string;           // Tax rate as a percentage (e.g., "10" for 10%)
+  taxRate: string;           // Tax rate as a percentage (ex: "10" for 10%)
   totalExpenses: string;     // Total expenses in dollars
   dealType: DealType;        // The type of deal structure
   guarantee: string;         // Guaranteed amount for the artist (if applicable)
@@ -322,7 +322,7 @@ export default function Home() {
             name="artistName"
             value={formData.artistName}
             onChange={handleInputChange}
-            placeholder="e.g., The Rolling Stones"
+            placeholder="ex: The Rolling Stones"
           />
         </div>
 
@@ -337,7 +337,7 @@ export default function Home() {
               name="ticketPrice"
               value={formData.ticketPrice}
               onChange={handleInputChange}
-              placeholder="e.g., 25"
+              placeholder="ex: 25"
               min="0"
               step="0.01"
             />
@@ -350,7 +350,7 @@ export default function Home() {
               name="ticketsSold"
               value={formData.ticketsSold}
               onChange={handleInputChange}
-              placeholder="e.g., 200"
+              placeholder="ex: 200"
               min="0"
               step="1"
             />
@@ -368,7 +368,7 @@ export default function Home() {
               name="taxRate"
               value={formData.taxRate}
               onChange={handleInputChange}
-              placeholder="e.g., 10"
+              placeholder="ex: 10"
               min="0"
               max="100"
               step="0.1"
@@ -382,7 +382,7 @@ export default function Home() {
               name="totalExpenses"
               value={formData.totalExpenses}
               onChange={handleInputChange}
-              placeholder="e.g., 500"
+              placeholder="ex: 500"
               min="0"
               step="0.01"
             />
@@ -420,7 +420,7 @@ export default function Home() {
                 name="guarantee"
                 value={formData.guarantee}
                 onChange={handleInputChange}
-                placeholder="e.g., 1000"
+                placeholder="ex: 1000"
                 min="0"
                 step="0.01"
               />
@@ -438,7 +438,7 @@ export default function Home() {
                 name="percentage"
                 value={formData.percentage}
                 onChange={handleInputChange}
-                placeholder="e.g., 80"
+                placeholder="ex: 80"
                 min="0"
                 max="100"
                 step="0.1"
