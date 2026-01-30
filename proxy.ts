@@ -1,11 +1,11 @@
 import { type NextRequest } from 'next/server'
-import { updateSession } from './lib/supabase/middleware'
+import { updateSession } from './lib/supabase/proxy'
 
 /**
- * Middleware runs on every request to protected routes.
+ * Proxy runs on every request to protected routes.
  * It refreshes the user's session and handles authentication redirects.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
 
   const isLoginPage = request.nextUrl.pathname === '/login'

@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Updates the user's session in middleware.
+ * Updates the user's session in proxy.
  * This function refreshes the auth token and manages session cookies.
  */
 export async function updateSession(request: NextRequest) {
