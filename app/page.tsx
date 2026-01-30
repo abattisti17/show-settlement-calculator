@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -75,9 +78,17 @@ function parseNumber(value: string): number {
 // ============================================
 
 export default function Home() {
+  const router = useRouter();
+  const supabase = createClient();
+
   // -----------------------------------------
   // STATE MANAGEMENT
   // -----------------------------------------
+
+  /**
+   * User authentication state
+   */
+  const [user, setUser] = useState<User | null>(null);
 
   /**
    * formData holds all the user inputs.
@@ -105,6 +116,31 @@ export default function Home() {
    * Empty string means no error.
    */
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  // -----------------------------------------
+  // AUTH EFFECT
+  // -----------------------------------------
+
+  /**
+   * Fetch the current user on mount
+   */
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    getUser();
+  }, [supabase.auth]);
+
+  /**
+   * Handle sign out
+   */
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   // -----------------------------------------
   // EVENT HANDLERS
@@ -255,6 +291,16 @@ export default function Home() {
   return (
     <>
     <main className="container">
+      {/* User Header */}
+      {user && (
+        <div className="user-header">
+          <span className="user-email">{user.email}</span>
+          <button onClick={handleSignOut} className="logout-btn">
+            Sign Out
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="header">
         <h1>Show Settlement Calculator</h1>
