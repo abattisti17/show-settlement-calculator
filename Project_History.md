@@ -77,3 +77,73 @@
 **Next:** Monitor next Vercel deployment to confirm deprecation warning is resolved.
 ---
 
+---
+### 2026-01-30 — Set up Supabase CLI and sync remote schema
+**Context:** Need to install Supabase CLI and pull existing schema from remote database to local repo before adding Stripe tables. This ensures migrations are properly tracked and don't conflict with existing tables.
+**Decision:** Install Supabase CLI via Homebrew, authenticate, link to remote project, and pull existing schema into migration files.
+**Changes:**
+- Installed Supabase CLI v2.72.7 via Homebrew
+- Fixed Homebrew permissions issues (`/opt/homebrew/Library/Taps`)
+- Ran `supabase init` to initialize local config
+- Ran `supabase login` to authenticate
+- Ran `supabase link --project-ref ikognfeisqcyxpoxemcu` to connect to remote
+- Repaired migration history for existing remote migration
+- Ran `supabase db pull` to pull existing schema (creates `supabase/` folder)
+- Created migration files:
+  - `20260130230242_remote_schema.sql` (empty, repaired history)
+  - `20260130231757_remote_schema.sql` (existing shows + share_links tables)
+  - `20260130232250_add_user_subscriptions.sql` (new Stripe subscription table)
+- Ran `supabase db push` to apply Stripe migration to remote database
+**Supabase impact:**
+- New table: `public.user_subscriptions` created in remote database
+- Existing tables (shows, share_links) now tracked in local migrations
+- Local repo now synced with remote database schema
+- `.gitignore` updated to ignore Supabase local dev files
+**Tradeoffs:**
+- First-time Docker image downloads took several minutes
+- Migration history had to be repaired due to existing remote migrations
+- Now have proper version control of database schema
+**Rollback:** Drop `user_subscriptions` table, delete migration files, run `supabase db push` with older migrations
+**Next:** Configure Stripe Dashboard and test subscription flow
+
+---
+### 2026-01-30 — Implement Stripe subscription paywall
+**Context:** Need to monetize the calculator app with a subscription model. User wants a full paywall where subscription is required to access the calculator, with single-tier pricing ($10/month) and customer self-service via Stripe Customer Portal.
+**Decision:** Implement Stripe Checkout for subscriptions with webhook-based sync to Supabase, subscription status checking on all pages, and Customer Portal integration for billing management.
+**Changes:**
+- Added `stripe@latest` npm package
+- Created Supabase table `user_subscriptions` (with RLS) to track subscription status
+- Created `lib/stripe/server.ts` - Stripe API utilities (checkout, portal, customer management)
+- Created `lib/stripe/subscription.ts` - Subscription status helpers for client and server
+- Created `lib/supabase/service.ts` - Service role client for webhook operations (bypasses RLS)
+- Created `app/api/create-checkout-session/route.ts` - POST endpoint to create Stripe Checkout sessions
+- Created `app/api/create-portal-session/route.ts` - POST endpoint to create Customer Portal sessions
+- Created `app/api/webhooks/stripe/route.ts` - Webhook handler for Stripe events (checkout.session.completed, customer.subscription.updated/deleted, invoice.payment_failed)
+- Created `app/dashboard/SubscribeButton.tsx` - Client component for subscription button
+- Created `app/dashboard/ManageBillingButton.tsx` - Client component for billing portal button
+- Updated `app/dashboard/page.tsx` - Added subscription status UI (active vs. no subscription views)
+- Updated `app/dashboard/dashboard.css` - Added styles for subscription components
+- Updated `app/page.tsx` - Added subscription check and paywall for calculator access
+- Updated `app/globals.css` - Added paywall and loading state styles
+- Created `supabase/migrations/20260130_create_user_subscriptions.sql` - Database migration script
+- Created `STRIPE_SETUP.md` - Comprehensive setup guide for Stripe integration
+- Created `TESTING_GUIDE.md` - Testing scenarios and checklist
+- Updated `.env.local` - Added Stripe keys and Supabase service role key (with placeholder values)
+**Supabase impact:**
+- New table: `public.user_subscriptions` (stores Stripe subscription data)
+- RLS enabled: Users can only view their own subscription
+- Requires `SUPABASE_SERVICE_ROLE_KEY` env var for webhook operations
+**Tradeoffs:**
+- Calculator now requires paid subscription (trade: revenue for user friction)
+- Added complexity with webhook handling and Stripe integration
+- Depends on external service (Stripe) for payment processing
+- Monthly recurring cost for users ($10/month initially)
+**Rollback:** Delete all new Stripe-related files, drop `user_subscriptions` table, remove Stripe env vars, revert changes to `app/page.tsx` and `app/dashboard/page.tsx` to remove subscription checks
+**Next:** 
+1. Run database migration in Supabase dashboard
+2. Configure Stripe Dashboard (create product, get API keys, set up webhook)
+3. Add environment variables to Vercel
+4. Test complete subscription flow with Stripe test cards
+5. Switch to live mode when ready to accept real payments
+---
+

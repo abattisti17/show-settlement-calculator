@@ -96,6 +96,118 @@
   transform: translateY(0);
 }
 
+/* Subscription Status */
+.subscription-status {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.subscription-status.active {
+  border-color: rgba(72, 187, 120, 0.3);
+  background: rgba(72, 187, 120, 0.05);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #48bb78;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.status-description {
+  color: #a0aec0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.cancel-notice {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(237, 137, 54, 0.1);
+  border: 1px solid rgba(237, 137, 54, 0.3);
+  border-radius: 8px;
+  color: #ed8936;
+  font-size: 0.9rem;
+}
+
+/* Subscription Prompt */
+.subscription-prompt {
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.subscription-prompt h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.prompt-description {
+  color: #a0aec0;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Features List */
+.features-list {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #e2e8f0;
+}
+
+.feature-item svg {
+  flex-shrink: 0;
+  color: #48bb78;
+}
+
+/* Pricing Info */
+.pricing-info {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.price-description {
+  color: #a0aec0;
+  font-size: 0.95rem;
+}
+
+/* Error Message */
+.error-message {
+  color: #fc8181;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 500px) {
   .dashboard-card {
@@ -104,5 +216,13 @@
 
   .dashboard-header h1 {
     font-size: 1.5rem;
+  }
+
+  .subscription-prompt h2 {
+    font-size: 1.25rem;
+  }
+
+  .price {
+    font-size: 2rem;
   }
 }

@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getUserSubscription } from "@/lib/stripe/subscription";
+import SubscribeButton from "./SubscribeButton";
+import ManageBillingButton from "./ManageBillingButton";
 import "./dashboard.css";
 
 export default async function DashboardPage() {
@@ -14,6 +17,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  // Get user's subscription status
+  const subscription = await getUserSubscription(user.id);
+  const hasActiveSubscription = subscription && ["active", "trialing"].includes(subscription.status);
+
   return (
     <main className="dashboard-container">
       <div className="dashboard-card">
@@ -23,21 +30,100 @@ export default async function DashboardPage() {
         </div>
 
         <div className="dashboard-content">
-          <p className="dashboard-intro">
-            You're all set! Your settlement calculator is ready to use.
-          </p>
+          {hasActiveSubscription ? (
+            <>
+              {/* Active Subscription View */}
+              <div className="subscription-status active">
+                <div className="status-badge">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>Active Subscription</span>
+                </div>
+                <p className="status-description">
+                  Your subscription is active. You have full access to the settlement calculator.
+                </p>
+                {subscription.cancel_at_period_end && subscription.current_period_end && (
+                  <p className="cancel-notice">
+                    Your subscription will end on {new Date(subscription.current_period_end).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
 
-          <div className="dashboard-actions">
-            <Link href="/" className="action-btn primary">
-              Go to Calculator
-            </Link>
+              <div className="dashboard-actions">
+                <Link href="/" className="action-btn primary">
+                  Go to Calculator
+                </Link>
 
-            <form action="/auth/signout" method="post">
-              <button type="submit" className="action-btn secondary">
-                Sign Out
-              </button>
-            </form>
-          </div>
+                <ManageBillingButton />
+
+                <form action="/auth/signout" method="post">
+                  <button type="submit" className="action-btn secondary">
+                    Sign Out
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* No Subscription View */}
+              <div className="subscription-prompt">
+                <h2>Subscribe to Access the Calculator</h2>
+                <p className="prompt-description">
+                  Get unlimited access to the settlement calculator with a simple monthly subscription.
+                </p>
+
+                <div className="features-list">
+                  <div className="feature-item">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Unlimited calculations</span>
+                  </div>
+                  <div className="feature-item">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Save settlements to your account</span>
+                  </div>
+                  <div className="feature-item">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Share settlements with artists</span>
+                  </div>
+                  <div className="feature-item">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Access from any device</span>
+                  </div>
+                  <div className="feature-item">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Cancel anytime</span>
+                  </div>
+                </div>
+
+                <div className="pricing-info">
+                  <p className="price">$10/month</p>
+                  <p className="price-description">Simple, transparent pricing</p>
+                </div>
+              </div>
+
+              <div className="dashboard-actions">
+                <SubscribeButton />
+
+                <form action="/auth/signout" method="post">
+                  <button type="submit" className="action-btn secondary">
+                    Sign Out
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </main>

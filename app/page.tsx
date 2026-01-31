@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { hasActiveSubscriptionClient } from "@/lib/stripe/subscription-client";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -91,6 +92,12 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
 
   /**
+   * Subscription status
+   */
+  const [hasSubscription, setHasSubscription] = useState<boolean>(false);
+  const [loadingSubscription, setLoadingSubscription] = useState<boolean>(true);
+
+  /**
    * formData holds all the user inputs.
    * We initialize with empty strings so the inputs start blank.
    */
@@ -122,16 +129,23 @@ export default function Home() {
   // -----------------------------------------
 
   /**
-   * Fetch the current user on mount
+   * Fetch the current user and subscription status on mount
    */
   useEffect(() => {
-    async function getUser() {
+    async function getUserAndSubscription() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        // Check subscription status
+        const active = await hasActiveSubscriptionClient();
+        setHasSubscription(active);
+      }
+      setLoadingSubscription(false);
     }
-    getUser();
+    getUserAndSubscription();
   }, [supabase.auth]);
 
   /**
@@ -287,6 +301,71 @@ export default function Home() {
   // -----------------------------------------
   // RENDER
   // -----------------------------------------
+
+  // Show loading state while checking subscription
+  if (loadingSubscription) {
+    return (
+      <main className="container">
+        <div className="loading-state">
+          <p>Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Show paywall if user is logged in but doesn't have active subscription
+  if (user && !hasSubscription) {
+    return (
+      <main className="container">
+        {/* User Header */}
+        <div className="user-header">
+          <span className="user-email">{user.email}</span>
+          <button onClick={handleSignOut} className="logout-btn">
+            Sign Out
+          </button>
+        </div>
+
+        {/* Paywall */}
+        <div className="paywall">
+          <div className="paywall-card">
+            <h1>Subscribe to Access the Calculator</h1>
+            <p className="paywall-description">
+              A subscription is required to use the Show Settlement Calculator. 
+              Get instant access to unlimited calculations and save your settlements.
+            </p>
+            
+            <div className="paywall-features">
+              <div className="paywall-feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Unlimited calculations</span>
+              </div>
+              <div className="paywall-feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Save and share settlements</span>
+              </div>
+              <div className="paywall-feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Access from any device</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="paywall-btn"
+            >
+              View Plans & Subscribe
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
