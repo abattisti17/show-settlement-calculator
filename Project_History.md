@@ -1,6 +1,31 @@
 # Project History (append-only)
 
 ---
+
+### 2026-01-30 — Extract Shared CSS Utilities
+**Context:** Reduce duplicated button/card/input styles after adding tokens.
+**Decision:** Centralize shared styles in global utility groups and simplify page CSS.
+**Changes:**
+- Added shared utility selectors in `app/globals.css` for primary buttons, ghost buttons, surface cards, and inputs.
+- Simplified overlapping styles in `app/globals.css`, `app/dashboard/dashboard.css`, and `app/login/login.css`.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Utilities are implemented as grouped selectors (no markup changes) for minimal diff.
+**Rollback:** Revert changes in `app/globals.css`, `app/dashboard/dashboard.css`, and `app/login/login.css`.
+**Next:** Optional: introduce semantic utility classes in markup as future cleanup.
+---
+### 2026-01-30 — Introduce Styling Tokens
+**Context:** Make the existing visual system easier to maintain without redesigning components.
+**Decision:** Add CSS variables for core colors/gradients/radii and refactor existing styles to use them.
+**Changes:**
+- Added design tokens in `app/globals.css` and swapped repeated color/gradient/radius values to variables.
+- Updated `app/dashboard/dashboard.css` and `app/login/login.css` to use the shared tokens.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Some values remain hard-coded (print styles and a few legacy colors) to keep scope small.
+**Rollback:** Revert changes in `app/globals.css`, `app/dashboard/dashboard.css`, and `app/login/login.css`.
+**Next:** Optional: extract shared component classes (buttons/cards/forms) into reusable utilities.
+---
 ### 2026-01-30 — Implement Supabase authentication (email/password + magic link)
 **Context:** Calculator was public and no-login. Goal: add authentication to prepare for saving settlements to DB. User wanted clean, correct implementation with both magic link and email/password login, with auth-protected calculator and one combined login page.
 **Decision:** Implement full Supabase auth using `@supabase/ssr` best practices for Next.js App Router. Combined login/signup page with tab toggles. Calculator requires authentication; post-login redirects to dashboard.

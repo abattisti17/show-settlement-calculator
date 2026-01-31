@@ -9,32 +9,30 @@
 }
 
 .auth-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: var(--radius-2xl);
   padding: 2.5rem;
   max-width: 440px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-card);
 }
 
 .auth-header {
   text-align: center;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .auth-header h1 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text-strong);
   margin-bottom: 0.5rem;
   letter-spacing: -0.02em;
 }
 
 .auth-header p {
-  color: #a0aec0;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
 }
 
@@ -43,9 +41,9 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface-strong);
   padding: 0.375rem;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 
 .auth-mode-toggle button {
@@ -55,7 +53,7 @@
   font-weight: 600;
   font-family: inherit;
   background: transparent;
-  color: #a0aec0;
+  color: var(--color-text-muted);
   border: none;
   border-radius: 7px;
   cursor: pointer;
@@ -63,8 +61,8 @@
 }
 
 .auth-mode-toggle button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: var(--gradient-primary);
+  color: var(--color-text-strong);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -78,9 +76,9 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface);
   padding: 0.25rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .auth-method-toggle button {
@@ -90,21 +88,21 @@
   font-weight: 500;
   font-family: inherit;
   background: transparent;
-  color: #718096;
+  color: var(--color-text-subtle);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .auth-method-toggle button.active {
   background: rgba(99, 179, 237, 0.2);
-  color: #63b3ed;
+  color: var(--color-accent);
 }
 
 .auth-method-toggle button:not(.active):hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #a0aec0;
+  background: var(--color-surface-strong);
+  color: var(--color-text-muted);
 }
 
 /* Submit Button */
@@ -114,10 +112,7 @@
   font-size: 1.05rem;
   font-weight: 600;
   font-family: inherit;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
   margin-top: 0.5rem;
@@ -125,7 +120,6 @@
 
 .auth-submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .auth-submit-btn:active:not(:disabled) {
@@ -140,7 +134,7 @@
 /* Helper text */
 .auth-helper-text {
   text-align: center;
-  color: #718096;
+  color: var(--color-text-subtle);
   font-size: 0.85rem;
   margin-top: 1.5rem;
   line-height: 1.6;
@@ -150,9 +144,9 @@
 .success-message {
   background: rgba(72, 187, 120, 0.15);
   border: 1px solid rgba(72, 187, 120, 0.3);
-  color: #68d391;
+  color: var(--color-success-strong);
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
