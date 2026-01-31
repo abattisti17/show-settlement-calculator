@@ -155,6 +155,32 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       console.error("Error creating subscription:", error);
     }
   }
+
+  // SYNC TO ENTITLEMENTS TABLE
+  // Determine entitlement status based on Stripe subscription status
+  const entitlementStatus = 
+    sub.status === "active" || sub.status === "trialing" ? "active" : "inactive";
+
+  const { error: entitlementError } = await supabase
+    .from("user_entitlements")
+    .upsert(
+      {
+        user_id: userId,
+        source: "stripe",
+        status: entitlementStatus,
+        expires_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+        metadata: {
+          stripe_subscription_id: sub.id,
+          stripe_customer_id: sub.customer,
+          stripe_price_id: sub.items.data[0].price.id,
+        },
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (entitlementError) {
+    console.error("Error syncing entitlement:", entitlementError);
+  }
 }
 
 /**
@@ -171,7 +197,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // IDEMPOTENCY: Check if subscription exists before updating
   const { data: existing } = await supabase
     .from("user_subscriptions")
-    .select("id, updated_at")
+    .select("id, updated_at, user_id")
     .eq("stripe_subscription_id", sub.id)
     .single();
 
@@ -194,6 +220,32 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (error) {
     console.error("Error updating subscription:", error);
   }
+
+  // SYNC TO ENTITLEMENTS TABLE
+  // Determine entitlement status based on Stripe subscription status
+  const entitlementStatus = 
+    sub.status === "active" || sub.status === "trialing" ? "active" : "inactive";
+
+  const { error: entitlementError } = await supabase
+    .from("user_entitlements")
+    .upsert(
+      {
+        user_id: existing.user_id,
+        source: "stripe",
+        status: entitlementStatus,
+        expires_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+        metadata: {
+          stripe_subscription_id: sub.id,
+          stripe_customer_id: sub.customer,
+          stripe_price_id: sub.items.data[0].price.id,
+        },
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (entitlementError) {
+    console.error("Error syncing entitlement:", entitlementError);
+  }
 }
 
 /**
@@ -205,7 +257,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   // IDEMPOTENCY: Check if subscription exists and is not already canceled
   const { data: existing } = await supabase
     .from("user_subscriptions")
-    .select("id, status")
+    .select("id, status, user_id")
     .eq("stripe_subscription_id", subscription.id)
     .single();
 
@@ -229,6 +281,20 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   if (error) {
     console.error("Error marking subscription as canceled:", error);
   }
+
+  // SYNC TO ENTITLEMENTS TABLE
+  // Set entitlement to inactive when subscription is canceled
+  const { error: entitlementError } = await supabase
+    .from("user_entitlements")
+    .update({
+      status: "inactive",
+    })
+    .eq("user_id", existing.user_id)
+    .eq("source", "stripe");
+
+  if (entitlementError) {
+    console.error("Error syncing entitlement cancellation:", entitlementError);
+  }
 }
 
 /**
@@ -250,7 +316,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   // IDEMPOTENCY: Check if subscription exists and is not already past_due
   const { data: existing } = await supabase
     .from("user_subscriptions")
-    .select("id, status")
+    .select("id, status, user_id")
     .eq("stripe_subscription_id", subscriptionId)
     .single();
 
@@ -273,5 +339,19 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   if (error) {
     console.error("Error updating subscription status to past_due:", error);
+  }
+
+  // SYNC TO ENTITLEMENTS TABLE
+  // Set entitlement to inactive when payment fails
+  const { error: entitlementError } = await supabase
+    .from("user_entitlements")
+    .update({
+      status: "inactive",
+    })
+    .eq("user_id", existing.user_id)
+    .eq("source", "stripe");
+
+  if (entitlementError) {
+    console.error("Error syncing entitlement for payment failure:", entitlementError);
   }
 }

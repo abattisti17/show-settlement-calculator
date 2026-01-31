@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { hasActiveSubscriptionClient } from "@/lib/stripe/subscription-client";
+import { hasProAccessClient } from "@/lib/access/entitlements-client";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -92,10 +92,10 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
 
   /**
-   * Subscription status
+   * Pro access status (via entitlements)
    */
-  const [hasSubscription, setHasSubscription] = useState<boolean>(false);
-  const [loadingSubscription, setLoadingSubscription] = useState<boolean>(true);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [loadingAccess, setLoadingAccess] = useState<boolean>(true);
 
   /**
    * formData holds all the user inputs.
@@ -129,23 +129,23 @@ export default function Home() {
   // -----------------------------------------
 
   /**
-   * Fetch the current user and subscription status on mount
+   * Fetch the current user and pro access status on mount
    */
   useEffect(() => {
-    async function getUserAndSubscription() {
+    async function getUserAndAccess() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       setUser(user);
 
       if (user) {
-        // Check subscription status
-        const active = await hasActiveSubscriptionClient();
-        setHasSubscription(active);
+        // Check pro access status via entitlements
+        const hasProAccess = await hasProAccessClient();
+        setHasAccess(hasProAccess);
       }
-      setLoadingSubscription(false);
+      setLoadingAccess(false);
     }
-    getUserAndSubscription();
+    getUserAndAccess();
   }, [supabase.auth]);
 
   /**
@@ -302,8 +302,8 @@ export default function Home() {
   // RENDER
   // -----------------------------------------
 
-  // Show loading state while checking subscription
-  if (loadingSubscription) {
+  // Show loading state while checking access
+  if (loadingAccess) {
     return (
       <main className="container">
         <div className="loading-state">
@@ -313,8 +313,8 @@ export default function Home() {
     );
   }
 
-  // Show paywall if user is logged in but doesn't have active subscription
-  if (user && !hasSubscription) {
+  // Show paywall if user is logged in but doesn't have pro access
+  if (user && !hasAccess) {
     return (
       <main className="container">
         {/* User Header */}

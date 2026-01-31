@@ -147,3 +147,37 @@
 5. Switch to live mode when ready to accept real payments
 ---
 
+---
+### 2026-01-30 — Implement entitlements system for manual pro access grants
+**Context:** Stripe subscription is the only way to get pro access. User wants ability to manually grant lifetime/temporary access to dev accounts, test accounts, friends/family ("comped" users) without requiring Stripe payments. Need flexible system that supports both Stripe-backed subscriptions and manual grants.
+**Decision:** Create `user_entitlements` table as single source of truth for access control. Keep `user_subscriptions` as Stripe data mirror. Stripe webhooks sync to both tables. Manual grants bypass Stripe entirely via SQL inserts. Access checks query entitlements only.
+**Changes:**
+- Created `supabase/migrations/20260130201233_create_entitlements.sql` - New user_entitlements table with RLS
+- Created `lib/access/entitlements.ts` - Server-side access functions (hasProAccess, getUserEntitlement, getEntitlementDetails)
+- Created `lib/access/entitlements-client.ts` - Client-side access functions (hasProAccessClient, getUserEntitlementClient, getEntitlementDetailsClient)
+- Updated `app/api/webhooks/stripe/route.ts` - All webhook handlers now sync to entitlements table (handleCheckoutSessionCompleted, handleSubscriptionUpdated, handleSubscriptionDeleted, handleInvoicePaymentFailed)
+- Updated `app/page.tsx` - Replaced hasActiveSubscriptionClient() with hasProAccessClient()
+- Updated `app/dashboard/page.tsx` - Replaced hasActiveSubscription() with hasProAccess(), shows entitlement source (Stripe vs manual), hides billing buttons for non-Stripe access
+- Created `ENTITLEMENTS_SETUP.md` - Complete setup and testing guide
+- Created `GRANT_ACCESS.sql` - SQL script library for manual access grants
+**Supabase impact:**
+- New table: `public.user_entitlements` (id, user_id, source, status, granted_by, granted_at, expires_at, metadata)
+- RLS: Users can SELECT their own entitlement only; only service_role can write
+- Source types: 'stripe', 'manual_comp', 'dev_account', 'test_account'
+- Status types: 'active', 'inactive', 'expired'
+- Helper function: `has_active_entitlement(user_id uuid) returns boolean`
+- Unique constraint on user_id (one entitlement per user, upsert pattern)
+**Tradeoffs:**
+- Two tables to maintain (user_subscriptions + user_entitlements) but clean separation of concerns
+- Manual grants require SQL access (Supabase dashboard) - simple but not a UI
+- Entitlements can expire (temporary grants) or be lifetime (null expires_at)
+- Stripe subscriptions overwrite manual grants for that user (last write wins on upsert)
+**Rollback:** Drop user_entitlements table, delete migration and new lib/access/ files, revert webhook and UI changes to use old subscription functions
+**Next:** 
+1. Run `supabase db push` to apply entitlements migration
+2. Grant dev access to self via SQL (test manual grant flow)
+3. Test Stripe subscription creates entitlement with source='stripe'
+4. Verify RLS prevents client writes to entitlements
+5. Grant access to friends/family/testers as needed
+---
+
