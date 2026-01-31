@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { hasProAccessClient } from "@/lib/access/entitlements-client";
+import ShareLinkManager from "./components/ShareLinkManager";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -795,6 +796,13 @@ function CalculatorContent() {
               🖨️ Print / Save as PDF
             </button>
           </div>
+        </section>
+      )}
+
+      {/* Share Link Manager - only show when show is saved */}
+      {currentShowId && result && user && (
+        <section className="section">
+          <ShareLinkManager showId={currentShowId} showName={formData.showName} />
         </section>
       )}
       </main>

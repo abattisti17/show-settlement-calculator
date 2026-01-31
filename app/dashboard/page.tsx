@@ -5,6 +5,7 @@ import { getEntitlementDetails } from "@/lib/access/entitlements";
 import { getUserSubscription } from "@/lib/stripe/subscription";
 import SubscribeButton from "./SubscribeButton";
 import ManageBillingButton from "./ManageBillingButton";
+import ShareLinkCopyButton from "./ShareLinkCopyButton";
 import "./dashboard.css";
 
 // Helper function to format relative time
@@ -49,6 +50,25 @@ export default async function DashboardPage() {
     .order('updated_at', { ascending: false });
 
   const userShows = shows || [];
+  const showIds = userShows.map((show) => show.id);
+
+  // Fetch share links for shows (if any)
+  const shareLinksByShowId = new Map<string, { token: string; is_active: boolean }>();
+  if (showIds.length > 0) {
+    const { data: shareLinks } = await supabase
+      .from('share_links')
+      .select('show_id, token, is_active')
+      .in('show_id', showIds);
+
+    if (shareLinks) {
+      shareLinks.forEach((link) => {
+        shareLinksByShowId.set(link.show_id, {
+          token: link.token,
+          is_active: link.is_active,
+        });
+      });
+    }
+  }
 
   return (
     <main className="dashboard-container">
@@ -68,8 +88,17 @@ export default async function DashboardPage() {
           {/* Shows List */}
           {userShows.length > 0 ? (
             <div className="shows-list">
-              {userShows.map((show) => (
+              {userShows.map((show) => {
+                const shareLink = shareLinksByShowId.get(show.id);
+
+                return (
                 <div key={show.id} className="show-card">
+                  <Link
+                    href={`/?showId=${show.id}`}
+                    className="show-card-link-cover"
+                  >
+                    Open {show.title}
+                  </Link>
                   <div className="show-card-content">
                     <h3 className="show-title">{show.title}</h3>
                     {show.inputs?.artistName && (
@@ -79,11 +108,17 @@ export default async function DashboardPage() {
                       Last saved: {formatRelativeTime(show.updated_at)}
                     </p>
                   </div>
-                  <Link href={`/?showId=${show.id}`} className="open-show-btn">
-                    Open
-                  </Link>
+                  <div className="show-card-actions">
+                    {shareLink?.is_active ? (
+                      <ShareLinkCopyButton token={shareLink.token} />
+                    ) : shareLink ? (
+                      <span className="share-show-disabled">Share (inactive)</span>
+                    ) : (
+                      <span className="share-show-disabled">No share link</span>
+                    )}
+                  </div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <div className="empty-state">

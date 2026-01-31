@@ -238,3 +238,64 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - Consider adding duplicate show feature
 ---
 
+### 2026-01-31 — Public Share Page Implementation
+**Context:** Implemented public sharing functionality for settlements. Users can now generate token-based share links for their saved shows, allowing anyone with the link to view a read-only settlement packet without authentication.
+**Decision:** Built complete share link system with server-side security using service role to bypass RLS (Row Level Security) for public viewing while maintaining database security.
+**Changes:**
+- Created API routes for share link management:
+  - `app/api/share-links/create/route.ts` - Generate new share links with crypto-random tokens
+  - `app/api/share-links/toggle/route.ts` - Toggle is_active status
+  - `app/api/share-links/get/route.ts` - Retrieve existing share link
+- Created public share page: `app/s/[token]/page.tsx` - Server component that fetches show data using service role
+- Created 404 page for invalid/inactive tokens: `app/s/[token]/not-found.tsx`
+- Created ShareLinkManager component: `app/components/ShareLinkManager.tsx` - Client component with copy-to-clipboard and toggle functionality
+- Integrated ShareLinkManager into calculator page (`app/page.tsx`) - displays after show is saved
+- Added comprehensive CSS styling for share components and public settlement packet view in `app/globals.css`
+**Supabase impact:** None - used existing `share_links` and `shows` tables with existing RLS policies. Service role key used for public read-only access.
+**Tradeoffs:**
+- Share links are permanent once created (not regeneratable) - provides stable URLs but can't revoke specific tokens without deactivation
+- Service role bypasses RLS for public viewing - necessary for public access but requires careful security implementation
+- 64-character hex tokens (32 random bytes) - strong security but long URLs
+**Rollback:** Remove ShareLinkManager from page.tsx, delete app/components/ShareLinkManager.tsx, delete app/s/[token]/ directory, delete app/api/share-links/ directory. Remove CSS additions from globals.css (lines after "SHARE LINK MANAGER STYLES" comment).
+**Next:**
+- Test complete flow: create → save → generate share link → view publicly → toggle active/inactive
+- Consider adding "Copy Link" button to dashboard show cards for quick sharing
+- Consider adding analytics to track share link views
+- Consider adding expiration dates for share links
+
+**Critical Fix Applied:**
+- Updated `proxy.ts` to allow public access to `/s/` routes (was blocking with login redirect)
+- Added `isPublicSharePage` check to bypass authentication middleware for share links
+---
+
+### 2026-01-31 — Dashboard Share Links + Build Warning Cleanup
+**Context:** Add quick share access on dashboard cards and remove debug instrumentation after successful share link fix. Build warnings were still present for metadataBase and baseline-browser-mapping.
+**Decision:** Surface share link access on dashboard cards when available, clean debug logs, and address build warnings with minimal changes.
+**Changes:**
+- Added share link access on dashboard cards with active/inactive states in `app/dashboard/page.tsx`.
+- Added dashboard styles for share actions in `app/dashboard/dashboard.css`.
+- Removed debug instrumentation from share flow and auth/login routes.
+- Added `metadataBase` to `app/layout.tsx` to silence Next metadata warning.
+- Updated dev dependency `baseline-browser-mapping` to latest.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Dashboard share links are only shown if a share link already exists.
+- Inactive links are shown as disabled text rather than a clickable link.
+**Rollback:** Revert changes in `app/dashboard/page.tsx`, `app/dashboard/dashboard.css`, and `app/layout.tsx`; undo `baseline-browser-mapping` update in `package.json`/`package-lock.json`.
+**Next:** Consider adding a “Generate Share Link” action directly from the dashboard.
+---
+
+### 2026-01-31 — Dashboard Card Click + Share Copy
+**Context:** Improve dashboard UX so entire cards open and sharing copies a link instead of opening a new tab.
+**Decision:** Make the card surface clickable via an overlay link and add a client-side copy button for active share links.
+**Changes:**
+- Added `ShareLinkCopyButton` client component in `app/dashboard/ShareLinkCopyButton.tsx`.
+- Updated `app/dashboard/page.tsx` to use a card overlay link and copy-only share action.
+- Adjusted `app/dashboard/dashboard.css` for overlay layering and action area behavior.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Card text is no longer selectable (overlay link captures clicks).
+**Rollback:** Revert changes in `app/dashboard/page.tsx`, `app/dashboard/dashboard.css`, and delete `app/dashboard/ShareLinkCopyButton.tsx`.
+**Next:** Consider adding a “Generate Share Link” action directly from the dashboard.
+---
+

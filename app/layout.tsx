@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Show Settlement Calculator",
   description: "Quickly calculate artist and venue payouts for a live show. For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown.",
+  metadataBase: new URL("https://show-settlement-calculator.vercel.app"),
   openGraph: {
     title: "Show Settlement Calculator",
     description: "Free · No login · Just math",

@@ -11,9 +11,15 @@ export async function proxy(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname === '/login'
   const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback')
   const isWebhook = request.nextUrl.pathname.startsWith('/api/webhooks/')
+  const isPublicSharePage = request.nextUrl.pathname.startsWith('/s/')
 
   // Webhooks should bypass authentication (they use signature verification instead)
   if (isWebhook) {
+    return supabaseResponse
+  }
+
+  // Public share pages should be accessible without authentication
+  if (isPublicSharePage) {
     return supabaseResponse
   }
 

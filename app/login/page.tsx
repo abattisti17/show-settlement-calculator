@@ -32,10 +32,6 @@ export default function LoginPage() {
 
     try {
       if (authMode === "signup") {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/8c045917-98d3-43c9-b40f-a64d68a70a38',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:35',message:'Starting signup',data:{email:email,hasPassword:!!password},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'SIGNUP'})}).catch(()=>{});
-        // #endregion
-        
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -43,10 +39,6 @@ export default function LoginPage() {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
-
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/8c045917-98d3-43c9-b40f-a64d68a70a38',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:48',message:'Signup result',data:{hasError:!!signUpError,errorMessage:signUpError?.message,errorStatus:signUpError?.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'SIGNUP'})}).catch(()=>{});
-        // #endregion
 
         if (signUpError) {
           setError(signUpError.message);
@@ -84,20 +76,12 @@ export default function LoginPage() {
 
     try {
       const redirectUrl = `${window.location.origin}/auth/callback`;
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8c045917-98d3-43c9-b40f-a64d68a70a38',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:80',message:'Sending magic link',data:{email:email,redirectUrl:redirectUrl,origin:window.location.origin},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-      
       const { error: magicLinkError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: redirectUrl,
         },
       });
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8c045917-98d3-43c9-b40f-a64d68a70a38',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:92',message:'Magic link result',data:{hasError:!!magicLinkError,errorMessage:magicLinkError?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
 
       if (magicLinkError) {
         setError(magicLinkError.message);
