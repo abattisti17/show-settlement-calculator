@@ -36,10 +36,68 @@ body {
   margin-bottom: 2rem;
 }
 
+.user-header-left {
+  display: flex;
+  align-items: center;
+}
+
 .user-header .user-email {
   color: #63b3ed;
   font-size: 0.9rem;
   font-family: var(--font-geist-mono), monospace;
+}
+
+.user-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.save-show-btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+  white-space: nowrap;
+}
+
+.save-show-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.save-show-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.save-show-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard-link-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  background: transparent;
+  color: #a0aec0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.dashboard-link-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
 }
 
 .logout-btn {
@@ -53,6 +111,7 @@ body {
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
 }
 
 .logout-btn:hover {
@@ -60,15 +119,24 @@ body {
   color: #fff;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 768px) {
   .user-header {
     flex-direction: column;
     gap: 0.75rem;
     text-align: center;
   }
 
-  .logout-btn {
+  .user-header-actions {
+    flex-wrap: wrap;
+    justify-content: center;
     width: 100%;
+  }
+
+  .save-show-btn,
+  .dashboard-link-btn,
+  .logout-btn {
+    flex: 1;
+    min-width: 140px;
   }
 }
 
@@ -397,6 +465,29 @@ body {
   border-radius: 8px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+}
+
+/* Save status messages */
+.save-status-message {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.save-status-message.success {
+  background: rgba(72, 187, 120, 0.15);
+  border: 1px solid rgba(72, 187, 120, 0.3);
+  color: #68d391;
+}
+
+.save-status-message.error {
+  background: rgba(245, 101, 101, 0.15);
+  border: 1px solid rgba(245, 101, 101, 0.3);
+  color: #fc8181;
 }
 
 /* Artist name display in results */

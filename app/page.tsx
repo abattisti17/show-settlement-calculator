@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { hasProAccessClient } from "@/lib/access/entitlements-client";
 
@@ -24,6 +24,7 @@ type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage";
  * All numeric values are stored as strings to handle empty inputs gracefully.
  */
 interface FormData {
+  showName: string;          // Name of the show (for saving/identifying)
   artistName: string;        // Name of the artist/band (optional, for display)
   ticketPrice: string;       // Price per ticket in dollars
   ticketsSold: string;       // Number of tickets sold
@@ -78,8 +79,9 @@ function parseNumber(value: string): number {
 // MAIN COMPONENT
 // ============================================
 
-export default function Home() {
+function CalculatorContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   // -----------------------------------------
@@ -102,6 +104,7 @@ export default function Home() {
    * We initialize with empty strings so the inputs start blank.
    */
   const [formData, setFormData] = useState<FormData>({
+    showName: "",
     artistName: "",
     ticketPrice: "",
     ticketsSold: "",
@@ -123,6 +126,13 @@ export default function Home() {
    * Empty string means no error.
    */
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  /**
+   * State for save/load functionality
+   */
+  const [currentShowId, setCurrentShowId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [saveMessage, setSaveMessage] = useState<string>("");
 
   // -----------------------------------------
   // AUTH EFFECT
@@ -147,6 +157,63 @@ export default function Home() {
     }
     getUserAndAccess();
   }, [supabase.auth]);
+
+  /**
+   * Load show from URL param if present
+   */
+  useEffect(() => {
+    async function loadShow() {
+      const showId = searchParams.get('showId');
+      if (!showId || !user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('shows')
+          .select('*')
+          .eq('id', showId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error loading show:', error);
+          setSaveStatus('error');
+          setSaveMessage('Failed to load show. It may not exist or you may not have access.');
+          setTimeout(() => {
+            setSaveMessage('');
+            setSaveStatus('idle');
+          }, 4000);
+          return;
+        }
+
+        if (data) {
+          // Hydrate form with show data
+          setFormData({
+            showName: data.title || '',
+            artistName: data.inputs.artistName || '',
+            ticketPrice: data.inputs.ticketPrice || '',
+            ticketsSold: data.inputs.ticketsSold || '',
+            taxRate: data.inputs.taxRate || '',
+            totalExpenses: data.inputs.totalExpenses || '',
+            dealType: data.inputs.dealType || 'guarantee',
+            guarantee: data.inputs.guarantee || '',
+            percentage: data.inputs.percentage || '',
+          });
+
+          // Set results
+          setResult(data.results);
+
+          // Set current show ID for updates
+          setCurrentShowId(data.id);
+        }
+      } catch (error) {
+        console.error('Error loading show:', error);
+      }
+    }
+
+    if (user && !loadingAccess) {
+      loadShow();
+    }
+  }, [searchParams, user, loadingAccess, supabase]);
 
   /**
    * Handle sign out
@@ -298,6 +365,114 @@ export default function Home() {
     window.print();
   }
 
+  /**
+   * Saves the current show to the database.
+   * If currentShowId exists, updates the existing show; otherwise creates a new one.
+   */
+  async function handleSaveShow() {
+    // Validation
+    if (!formData.showName.trim()) {
+      setSaveStatus('error');
+      setSaveMessage('Please enter a show name before saving.');
+      setTimeout(() => {
+        setSaveMessage('');
+        setSaveStatus('idle');
+      }, 4000);
+      return;
+    }
+
+    if (!result) {
+      setSaveStatus('error');
+      setSaveMessage('Please calculate the settlement before saving.');
+      setTimeout(() => {
+        setSaveMessage('');
+        setSaveStatus('idle');
+      }, 4000);
+      return;
+    }
+
+    if (!user) {
+      setSaveStatus('error');
+      setSaveMessage('You must be logged in to save shows.');
+      setTimeout(() => {
+        setSaveMessage('');
+        setSaveStatus('idle');
+      }, 4000);
+      return;
+    }
+
+    setSaveStatus('saving');
+    setSaveMessage('');
+
+    try {
+      // Prepare data for Supabase
+      const showData = {
+        user_id: user.id,
+        title: formData.showName.trim(),
+        inputs: {
+          artistName: formData.artistName,
+          ticketPrice: formData.ticketPrice,
+          ticketsSold: formData.ticketsSold,
+          taxRate: formData.taxRate,
+          totalExpenses: formData.totalExpenses,
+          dealType: formData.dealType,
+          guarantee: formData.guarantee,
+          percentage: formData.percentage,
+        },
+        results: result,
+      };
+
+      let savedShowId: string;
+
+      if (currentShowId) {
+        // Update existing show
+        const { data, error } = await supabase
+          .from('shows')
+          .update(showData)
+          .eq('id', currentShowId)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        savedShowId = data.id;
+        
+        setSaveStatus('success');
+        setSaveMessage('Show updated successfully!');
+      } else {
+        // Insert new show
+        const { data, error } = await supabase
+          .from('shows')
+          .insert([showData])
+          .select()
+          .single();
+
+        if (error) throw error;
+        savedShowId = data.id;
+        setCurrentShowId(savedShowId);
+        
+        setSaveStatus('success');
+        setSaveMessage('Show saved successfully!');
+      }
+
+      // Clear success message after 4 seconds
+      setTimeout(() => {
+        setSaveMessage('');
+        setSaveStatus('idle');
+      }, 4000);
+    } catch (error) {
+      console.error('Error saving show:', error);
+      setSaveStatus('error');
+      setSaveMessage('Failed to save show. Please try again.');
+      
+      // Clear error message after 4 seconds
+      setTimeout(() => {
+        setSaveMessage('');
+        setSaveStatus('idle');
+      }, 4000);
+    }
+  }
+
   // -----------------------------------------
   // RENDER
   // -----------------------------------------
@@ -373,10 +548,27 @@ export default function Home() {
       {/* User Header */}
       {user && (
         <div className="user-header">
-          <span className="user-email">{user.email}</span>
-          <button onClick={handleSignOut} className="logout-btn">
-            Sign Out
-          </button>
+          <div className="user-header-left">
+            <span className="user-email">{user.email}</span>
+          </div>
+          <div className="user-header-actions">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="dashboard-link-btn"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={handleSaveShow}
+              disabled={!result || saveStatus === 'saving'}
+              className="save-show-btn"
+            >
+              {saveStatus === 'saving' ? 'Saving...' : currentShowId ? 'Update Show' : 'Save Show'}
+            </button>
+            <button onClick={handleSignOut} className="logout-btn">
+              Sign Out
+            </button>
+          </div>
         </div>
       )}
 
@@ -389,10 +581,28 @@ export default function Home() {
         </p>
       </header>
 
+      {/* Save Status Message */}
+      {saveMessage && (
+        <div className={`save-status-message ${saveStatus === 'success' ? 'success' : 'error'}`}>
+          {saveMessage}
+        </div>
+      )}
+
       {/* Section 1: Input Form */}
       <section className="section">
         {/* Show Info */}
         <h3 className="section-title">Show Info</h3>
+        <div className="form-group">
+          <label htmlFor="showName">Show Name</label>
+          <input
+            type="text"
+            id="showName"
+            name="showName"
+            value={formData.showName}
+            onChange={handleInputChange}
+            placeholder="ex: Summer Festival 2026"
+          />
+        </div>
         <div className="form-group">
           <label htmlFor="artistName">Artist / Band Name</label>
           <input
@@ -615,5 +825,19 @@ export default function Home() {
         </div>
       </footer>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <main className="container">
+        <div className="loading-state">
+          <p>Loading...</p>
+        </div>
+      </main>
+    }>
+      <CalculatorContent />
+    </Suspense>
   );
 }

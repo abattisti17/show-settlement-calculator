@@ -7,6 +7,22 @@ import SubscribeButton from "./SubscribeButton";
 import ManageBillingButton from "./ManageBillingButton";
 import "./dashboard.css";
 
+// Helper function to format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -25,76 +41,109 @@ export default async function DashboardPage() {
   const subscription = await getUserSubscription(user.id);
   const isStripeSource = entitlement?.source === "stripe";
 
+  // Fetch user's shows
+  const { data: shows, error: showsError } = await supabase
+    .from('shows')
+    .select('id, title, updated_at, inputs')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  const userShows = shows || [];
+
   return (
     <main className="dashboard-container">
-      <div className="dashboard-card">
-        <div className="dashboard-header">
-          <h1>Welcome to Your Dashboard</h1>
-          <p className="user-email">{user.email}</p>
-        </div>
+      {hasAccess ? (
+        <>
+          {/* Dashboard Header */}
+          <div className="dashboard-top-header">
+            <div className="dashboard-title-section">
+              <h1>Your Shows</h1>
+              <p className="user-email">{user.email}</p>
+            </div>
+            <Link href="/" className="create-show-btn">
+              Create New Show
+            </Link>
+          </div>
 
-        <div className="dashboard-content">
-          {hasAccess ? (
-            <>
-              {/* Active Access View */}
-              <div className="subscription-status active">
-                <div className="status-badge">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span>
-                    {isStripeSource ? "Active Subscription" : "Pro Access"}
-                  </span>
+          {/* Shows List */}
+          {userShows.length > 0 ? (
+            <div className="shows-list">
+              {userShows.map((show) => (
+                <div key={show.id} className="show-card">
+                  <div className="show-card-content">
+                    <h3 className="show-title">{show.title}</h3>
+                    {show.inputs?.artistName && (
+                      <p className="show-artist">Artist: {show.inputs.artistName}</p>
+                    )}
+                    <p className="show-timestamp">
+                      Last saved: {formatRelativeTime(show.updated_at)}
+                    </p>
+                  </div>
+                  <Link href={`/?showId=${show.id}`} className="open-show-btn">
+                    Open
+                  </Link>
                 </div>
-                <p className="status-description">
-                  {isStripeSource 
-                    ? "Your subscription is active. You have full access to the settlement calculator."
-                    : "You have pro access to the settlement calculator."}
-                </p>
-                
-                {/* Show access type for non-Stripe sources */}
-                {!isStripeSource && entitlement && (
-                  <p className="status-description" style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.8 }}>
-                    Access type: {entitlement.source === "manual_comp" ? "Complimentary" : 
-                                 entitlement.source === "dev_account" ? "Developer" : 
-                                 entitlement.source === "test_account" ? "Test Account" : "Special"}
-                  </p>
-                )}
-                
-                {/* Show expiration notice for Stripe subscriptions */}
-                {isStripeSource && subscription?.cancel_at_period_end && subscription.current_period_end && (
-                  <p className="cancel-notice">
-                    Your subscription will end on {new Date(subscription.current_period_end).toLocaleDateString()}
-                  </p>
-                )}
-                
-                {/* Show expiration notice for temporary grants */}
-                {!isStripeSource && entitlement?.expires_at && (
-                  <p className="cancel-notice">
-                    Access expires on {new Date(entitlement.expires_at).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-
-              <div className="dashboard-actions">
-                <Link href="/" className="action-btn primary">
-                  Go to Calculator
-                </Link>
-
-                {/* Only show billing management for Stripe subscriptions */}
-                {isStripeSource && <ManageBillingButton />}
-
-                <form action="/auth/signout" method="post">
-                  <button type="submit" className="action-btn secondary">
-                    Sign Out
-                  </button>
-                </form>
-              </div>
-            </>
+              ))}
+            </div>
           ) : (
-            <>
-              {/* No Subscription View */}
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h2>No shows yet</h2>
+              <p>Create your first show to start tracking settlements</p>
+              <Link href="/" className="create-show-btn-large">
+                Create New Show
+              </Link>
+            </div>
+          )}
+
+          {/* Subscription Info Footer */}
+          <div className="dashboard-footer">
+            <div className="subscription-info-compact">
+              <div className="subscription-badge">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>{isStripeSource ? "Active Subscription" : "Pro Access"}</span>
+              </div>
+              
+              {isStripeSource && subscription?.cancel_at_period_end && subscription.current_period_end && (
+                <p className="subscription-notice">
+                  Ends {new Date(subscription.current_period_end).toLocaleDateString()}
+                </p>
+              )}
+              
+              {!isStripeSource && entitlement?.expires_at && (
+                <p className="subscription-notice">
+                  Expires {new Date(entitlement.expires_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+
+            <div className="dashboard-footer-actions">
+              {isStripeSource && <ManageBillingButton />}
+              <form action="/auth/signout" method="post">
+                <button type="submit" className="action-btn secondary">
+                  Sign Out
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* No Subscription View */}
+          <div className="dashboard-card">
+            <div className="dashboard-header">
+              <h1>Welcome to Your Dashboard</h1>
+              <p className="user-email">{user.email}</p>
+            </div>
+
+            <div className="dashboard-content">
               <div className="subscription-prompt">
                 <h2>Subscribe to Access the Calculator</h2>
                 <p className="prompt-description">
@@ -149,10 +198,10 @@ export default async function DashboardPage() {
                   </button>
                 </form>
               </div>
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

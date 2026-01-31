@@ -181,3 +181,60 @@
 5. Grant access to friends/family/testers as needed
 ---
 
+---
+### 2026-01-30 — Implement dashboard show saving and listing functionality
+**Context:** Calculator was ephemeral with no persistence. User needed ability to save shows to database, list all saved shows on dashboard, and reopen shows for editing. This completes the MVP show management functionality.
+**Decision:** Implement full CRUD for shows using existing `public.shows` table. Transform dashboard from subscription-only view to shows list. Add save button to calculator header, support URL params for loading shows, and maintain backward compatibility with subscription UI.
+**Changes:**
+- Updated `app/page.tsx`:
+  - Added `showName` field to `FormData` interface and form state
+  - Added Show Name input field in Show Info section
+  - Added state for `currentShowId`, `saveStatus`, `saveMessage`
+  - Implemented `handleSaveShow()` function with insert/update logic
+  - Added URL param support with `useSearchParams()` to load shows via `?showId=uuid`
+  - Added `loadShow()` effect to fetch and hydrate show data on mount
+  - Updated user header with "Save Show", "Back to Dashboard" buttons and save status display
+  - Wrapped component in Suspense boundary to fix Next.js prerender error
+- Updated `app/dashboard/page.tsx`:
+  - Added `formatRelativeTime()` helper function for timestamps
+  - Fetched user's shows from Supabase ordered by `updated_at DESC`
+  - Completely redesigned dashboard layout for show management:
+    - Header with "Create New Show" button
+    - Shows list displaying show cards with title, artist, timestamp
+    - Empty state when no shows exist
+    - Compact subscription info moved to footer
+- Updated `app/globals.css`:
+  - Added `.user-header-left` and `.user-header-actions` for new header layout
+  - Added `.save-show-btn` styles with gradient background and disabled state
+  - Added `.dashboard-link-btn` styles for back navigation
+  - Added `.save-status-message` with success/error variants
+  - Updated responsive breakpoints for new header layout
+- Updated `app/dashboard/dashboard.css`:
+  - Changed `.dashboard-container` from centered flex to top-aligned grid
+  - Added `.dashboard-top-header` with title and create button
+  - Added `.shows-list` grid layout (responsive)
+  - Added `.show-card` with hover effects, title, artist, timestamp display
+  - Added `.empty-state` with icon and call-to-action
+  - Added `.dashboard-footer` with compact subscription badge
+  - Added comprehensive responsive styles for mobile
+**Supabase impact:** 
+- Uses existing `public.shows` table (no schema changes)
+- Queries: INSERT (create show), UPDATE (edit show), SELECT (list shows, load single show)
+- All operations protected by RLS policies (users can only access their own shows)
+**Tradeoffs:**
+- Dashboard is now shows-first instead of subscription-first (better for engaged users, less visible for billing)
+- Added URL state management increases complexity but enables shareable links
+- Suspense boundary required for `useSearchParams()` adds minor loading flicker
+- No delete functionality yet (future enhancement)
+**Rollback:** 
+```bash
+git revert <commit-hash>
+```
+Reverts all changes to calculator, dashboard, and CSS files. No database migrations to undo since table already existed.
+**Next:** 
+- Test complete flow: create show, save, list on dashboard, reopen, edit, update
+- Consider adding delete show functionality
+- Consider adding search/filter for large show lists
+- Consider adding duplicate show feature
+---
+
