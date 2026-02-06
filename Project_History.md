@@ -2,6 +2,41 @@
 
 ---
 
+### 2026-01-30 — Theme Toggle in Footer
+**Context:** The fixed toggle felt intrusive.
+**Decision:** Move the theme toggle into a footer container at the bottom of the page.
+**Changes:**
+- Rendered the theme toggle inside a new footer in `app/layout.tsx`.
+- Updated toggle styling in `app/globals.css` to be static and centered.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Toggle appears below page content rather than floating.
+**Rollback:** Move `ThemeToggle` back to top-level and restore fixed styles in `app/globals.css`.
+---
+### 2026-01-30 — OS-Driven Theme Toggle
+**Context:** Add OS-based theme switching with a manual toggle.
+**Decision:** Use `prefers-color-scheme` when no user preference is stored and provide a fixed toggle UI for explicit overrides.
+**Changes:**
+- Added theme toggle client component in `app/components/ThemeToggle.tsx` and mounted it in `app/layout.tsx`.
+- Added light-theme media override and toggle styling in `app/globals.css`.
+- Removed default `data-theme` from `app/layout.tsx` so OS preference can drive the initial theme.
+**Supabase impact:** None.
+**Tradeoffs:**
+- A fixed toggle is shown on all pages.
+**Rollback:** Remove `ThemeToggle` and related CSS, and re-add `data-theme` on `app/layout.tsx`.
+---
+### 2026-01-30 — Add Light Theme Tokens
+**Context:** Provide a light mode using the new token system.
+**Decision:** Add a light theme token override and switch the app default to light.
+**Changes:**
+- Added `:root[data-theme="light"]` token overrides in `app/globals.css`.
+- Replaced remaining hard-coded text colors in `app/globals.css`, `app/dashboard/dashboard.css`, and `app/login/login.css` with tokens.
+- Set the default theme to light in `app/layout.tsx`.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Print styles remain hard-coded to preserve print fidelity.
+**Rollback:** Remove the `data-theme` attribute in `app/layout.tsx` and revert token changes in `app/globals.css`.
+---
 ### 2026-01-30 — Extract Shared CSS Utilities
 **Context:** Reduce duplicated button/card/input styles after adding tokens.
 **Decision:** Centralize shared styles in global utility groups and simplify page CSS.

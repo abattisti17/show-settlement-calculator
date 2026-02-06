@@ -68,7 +68,7 @@
 
 .auth-mode-toggle button:not(.active):hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e0;
+  color: var(--color-text-soft);
 }
 
 /* Method Toggle (Password / Magic Link) */
