@@ -8,10 +8,13 @@ import { updateSession } from './lib/supabase/proxy'
 export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
 
+  const isRootPage = request.nextUrl.pathname === '/'
+  const isPricingPage = request.nextUrl.pathname === '/pricing'
   const isLoginPage = request.nextUrl.pathname === '/login'
   const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback')
   const isWebhook = request.nextUrl.pathname.startsWith('/api/webhooks/')
   const isPublicSharePage = request.nextUrl.pathname.startsWith('/s/')
+  const isExamplePacket = request.nextUrl.pathname === '/example-packet.pdf'
 
   // Webhooks should bypass authentication (they use signature verification instead)
   if (isWebhook) {
@@ -23,13 +26,17 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
+  if (isExamplePacket) {
+    return supabaseResponse
+  }
+
   // If user is authenticated and trying to access login page, redirect to dashboard
   if (user && isLoginPage) {
-    return Response.redirect(new URL('/dashboard', request.url))
+    return Response.redirect(new URL('/', request.url))
   }
 
   // If user is not authenticated and not on login or auth callback, redirect to login
-  if (!user && !isLoginPage && !isAuthCallback) {
+  if (!user && !isLoginPage && !isAuthCallback && !isRootPage && !isPricingPage) {
     return Response.redirect(new URL('/login', request.url))
   }
 

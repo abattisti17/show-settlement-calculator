@@ -359,3 +359,37 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 **Next:** Consider adding a “Generate Share Link” action directly from the dashboard.
 ---
 
+---
+### 2026-02-06 — Logged-out landing page
+**Context:** Visitors were being sent straight to login; a sales landing page is needed for logged-out users while keeping the main app for logged-in users.
+**Decision:** Allow public access to `/`, render the landing page when unauthenticated, and keep the calculator experience for signed-in users. Add a static example PDF for the CTA.
+**Changes:**
+- Updated auth routing in `proxy.ts` and post-login redirect in `app/login/page.tsx`.
+- Added landing page UI and styles in `app/page.tsx` and `app/landing.css`.
+- Added example packet asset in `public/example-packet.pdf` and linked it in the landing CTAs.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Landing is rendered after client auth check (brief loading state).
+- Calculator stays at `/` for authenticated users while logged-out users see marketing content.
+**Rollback:** Revert changes in `proxy.ts`, `app/page.tsx`, `app/landing.css`, `app/login/page.tsx`, and delete `public/example-packet.pdf`.
+**Next:** Replace the placeholder example PDF with a real packet when ready.
+---
+
+---
+### 2026-02-06 — Pricing page
+**Context:** Need a pricing page with actual pricing tiers for the landing flow.
+**Decision:** Create a dedicated `/pricing` route with pay-as-you-go, Pro ($299/mo), and Org (starting at $999/mo) tiers. Add public access via proxy.
+**Changes:**
+- Created `app/pricing/page.tsx` with 3-tier layout: Pay-as-you-go ($10/settlement or $49 for 10), Pro ($299/mo, featured), Org (starting at $999/mo).
+- Created `app/pricing/pricing.css` with responsive pricing card styles, add-ons section, and FAQ section.
+- Updated landing page in `app/page.tsx` to link "View pricing" CTA to `/pricing`.
+- Updated `proxy.ts` to allow public access to `/pricing` route.
+- Added back navigation button to return to landing page.
+- Added add-ons section (onboarding/template setup $500, extra settlement packs $49 per 10).
+**Supabase impact:** None.
+**Tradeoffs:**
+- Pro tier is marked "Most Popular" to drive conversions to monthly subscription.
+- Pay-as-you-go allows users to start without monthly commitment.
+**Rollback:** Delete `app/pricing/` directory, revert link change in `app/page.tsx`, revert `isPricingPage` additions in `proxy.ts`.
+**Next:** Wire up actual Stripe checkout for each tier.
+---

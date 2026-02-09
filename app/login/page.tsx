@@ -54,7 +54,7 @@ export default function LoginPage() {
         if (signInError) {
           setError(signInError.message);
         } else {
-          router.push("/dashboard");
+          router.push("/");
         }
       }
     } catch (err) {

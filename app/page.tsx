@@ -3,9 +3,11 @@
 import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { hasProAccessClient } from "@/lib/access/entitlements-client";
 import ShareLinkManager from "./components/ShareLinkManager";
+import "./landing.css";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -74,6 +76,124 @@ function formatCurrency(amount: number): string {
 function parseNumber(value: string): number {
   const parsed = parseFloat(value);
   return isNaN(parsed) ? 0 : parsed;
+}
+
+// ============================================
+// LANDING PAGE (LOGGED OUT)
+// ============================================
+
+function LandingPage() {
+  return (
+    <main className="landing-page">
+      <header className="landing-hero">
+        <p className="landing-hero-kicker">Close out shows in minutes.</p>
+        <h1>Create a clean settlement packet, share it instantly, and keep the math defensible.</h1>
+        <p className="landing-hero-subtitle">
+          Run a settlement - export PDF - send a view-only link.
+          <br />
+          Works with your existing ticketing + spreadsheets.
+        </p>
+
+        <div className="landing-cta-group">
+          <Link href="/login" className="btn-primary landing-cta-primary">
+            Create a settlement
+          </Link>
+          <a
+            href="/example-packet.pdf"
+            className="btn-ghost landing-cta-secondary"
+            target="_blank"
+            rel="noreferrer"
+          >
+            See an example packet
+          </a>
+        </div>
+        <p className="landing-cta-note">
+          No credit card required to try. Upgrade when you are ready.
+        </p>
+      </header>
+
+      <section className="landing-section">
+        <h2>Everything you need to close out a show</h2>
+        <ul className="landing-list">
+          <li>
+            <strong>Reusable templates:</strong> Save deal terms once. Prefill the next show
+            automatically.
+          </li>
+          <li>
+            <strong>Clean packet output:</strong> Professional PDF you can send to artists, managers,
+            or accounting.
+          </li>
+          <li>
+            <strong>Shareable link:</strong> View-only link with controls (draft or final, revoke
+            anytime).
+          </li>
+        </ul>
+      </section>
+
+      <section className="landing-section landing-panel">
+        <h2>Stop doing settlements in Notes, spreadsheets, and email threads</h2>
+        <p className="landing-paragraph">
+          Settlements are where disputes happen. This gives you a consistent workflow and a packet
+          you can stand behind.
+        </p>
+        <ul className="landing-list">
+          <li>Reduce back-and-forth ("show me the numbers")</li>
+          <li>Standardize deductions and splits</li>
+          <li>Keep a record of what changed and why</li>
+        </ul>
+      </section>
+
+      <section className="landing-section">
+        <h2>Three steps</h2>
+        <ol className="landing-steps">
+          <li>Create a show (or start from a template)</li>
+          <li>Enter the numbers and review the breakdown</li>
+          <li>Export + share (PDF + view-only link)</li>
+        </ol>
+      </section>
+
+      <section className="landing-section landing-panel">
+        <h2>Built for operators who do this often</h2>
+        <ul className="landing-list">
+          <li>High-frequency venues (multiple shows per week)</li>
+          <li>Promoters and recurring series</li>
+          <li>Multi-room or small venue groups</li>
+          <li>Anyone who needs settlements to be consistent and defensible</li>
+        </ul>
+      </section>
+
+      <section className="landing-section">
+        <h2>Your data stays private</h2>
+        <ul className="landing-list">
+          <li>Your settlements are private by default</li>
+          <li>Share links are view-only</li>
+          <li>You control access and can revoke links anytime</li>
+        </ul>
+      </section>
+
+      <section className="landing-section landing-panel">
+        <div className="landing-pricing">
+          <div>
+            <h2>Simple pricing</h2>
+            <p className="landing-paragraph">
+              Start free. Upgrade for templates, advanced sharing controls, and multi-user
+              workflows.
+            </p>
+          </div>
+          <Link href="/pricing" className="btn-primary landing-cta-primary">
+            View pricing
+          </Link>
+        </div>
+      </section>
+
+      <section className="landing-section landing-final-cta">
+        <h2>Close out your next show faster.</h2>
+        <Link href="/login" className="btn-primary landing-cta-primary">
+          Create your first settlement
+        </Link>
+      </section>
+    </main>
+  );
 }
 
 // ============================================
@@ -487,6 +607,10 @@ function CalculatorContent() {
         </div>
       </main>
     );
+  }
+
+  if (!user) {
+    return <LandingPage />;
   }
 
   // Show paywall if user is logged in but doesn't have pro access
