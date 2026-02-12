@@ -393,3 +393,56 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 **Rollback:** Delete `app/pricing/` directory, revert link change in `app/page.tsx`, revert `isPricingPage` additions in `proxy.ts`.
 **Next:** Wire up actual Stripe checkout for each tier.
 ---
+
+---
+### 2026-02-06 — Landing page visual enhancements with 3-column card layouts
+**Context:** Landing page was text-heavy and lacked visual interest. Needed icons, concert photography, and better visual hierarchy with card-based layouts.
+**Decision:** Convert non-card sections to 3-column card layouts with centered titles. Add Lucide SVG icons and concert photography throughout. Each card displays icon, title, and description stacked vertically.
+**Changes:**
+- Restructured `app/page.tsx`:
+  - Converted "Everything you need", "Three steps", and "Your data stays private" to 3-column card layouts
+  - Each card has centered icon (32px), h3 title, and description
+  - Steps section includes numbered badges (1/2/3) overlaying icons
+  - Added 4 concert photos from Unsplash: hero background, 2 side panel images, final CTA background
+  - Added photo attribution footer with credits for 4 photographers
+- Updated `app/landing.css`:
+  - Added `.landing-cards-grid` (3-column grid, stacks on mobile)
+  - Added `.landing-feature-card` (centered vertical layout)
+  - Added `.landing-step-badge` (gradient numbered badges)
+  - Hero and CTA background images (12% and 8% opacity with blur)
+  - Side-by-side panel layouts for image sections
+  - Responsive breakpoints (single column on mobile)
+  - Photo credits styling at page bottom
+**Supabase impact:** None.
+**Tradeoffs:**
+- 3-column layouts improve scannability but use more vertical space on mobile
+- 4 concert photos add ~600-800KB to page weight
+- Icons inline as SVG (no external requests, adds ~2KB)
+- Background images use very low opacity to maintain text readability
+**Rollback:** Revert changes to `app/page.tsx` and `app/landing.css`; delete `public/concert-hero-*.jpg` files.
+**Next:** Consider Next.js Image component for optimization and lazy loading.
+---
+
+---
+### 2026-02-06 — Landing page navigation bar
+**Context:** Landing page needed a navigation bar with logo and authentication CTAs for better user orientation and conversion.
+**Decision:** Add a sticky top navigation bar with logo on left and Log in/Sign up buttons on right.
+**Changes:**
+- Updated `app/page.tsx`:
+  - Added navigation bar component with GigSettle logo and name
+  - Added Log in link and Sign up button (primary CTA)
+  - Both link to `/login` page
+  - Wrapped landing content in fragment to support nav + main layout
+- Updated `app/landing.css`:
+  - Added sticky navigation styles (`.landing-nav`) with backdrop blur
+  - Logo + text layout with hover effects
+  - Right-aligned action buttons with proper spacing
+  - Sign up button uses primary gradient style
+  - Responsive adjustments for mobile (smaller text, tighter spacing)
+**Supabase impact:** None.
+**Tradeoffs:**
+- Sticky nav takes vertical space but improves navigation and conversion
+- Backdrop blur effect may not work on older browsers (degrades gracefully)
+**Rollback:** Revert changes to `app/page.tsx` and `app/landing.css` for navigation sections.
+**Next:** Consider adding links to pricing page in navigation.
+---
