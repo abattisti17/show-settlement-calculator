@@ -7,36 +7,45 @@ import { updateSession } from './lib/supabase/proxy'
  */
 export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
+  const pathname = request.nextUrl.pathname
 
-  const isRootPage = request.nextUrl.pathname === '/'
-  const isPricingPage = request.nextUrl.pathname === '/pricing'
-  const isLoginPage = request.nextUrl.pathname === '/login'
-  const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback')
-  const isWebhook = request.nextUrl.pathname.startsWith('/api/webhooks/')
-  const isPublicSharePage = request.nextUrl.pathname.startsWith('/s/')
-  const isExamplePacket = request.nextUrl.pathname === '/example-packet.pdf'
+  const isLoginPage = pathname === '/login'
+  const isAuthCallback = pathname.startsWith('/auth/callback')
+  const isWebhook = pathname.startsWith('/api/webhooks/')
+
+  const publicMarketingRoutes = new Set([
+    '/',
+    '/pricing',
+    '/login',
+    '/example-packet.pdf',
+    '/robots.txt',
+    '/sitemap.xml',
+  ])
+  const isPublicMarketingRoute =
+    publicMarketingRoutes.has(pathname) ||
+    pathname.startsWith('/s/') ||
+    pathname.startsWith('/blog/') ||
+    pathname.startsWith('/use-cases/') ||
+    pathname.startsWith('/compare/') ||
+    pathname.startsWith('/templates/')
 
   // Webhooks should bypass authentication (they use signature verification instead)
   if (isWebhook) {
     return supabaseResponse
   }
 
-  // Public share pages should be accessible without authentication
-  if (isPublicSharePage) {
-    return supabaseResponse
-  }
-
-  if (isExamplePacket) {
+  // Public marketing and share routes should be crawler-accessible.
+  if (isPublicMarketingRoute) {
     return supabaseResponse
   }
 
   // If user is authenticated and trying to access login page, redirect to dashboard
   if (user && isLoginPage) {
-    return Response.redirect(new URL('/', request.url))
+    return Response.redirect(new URL('/dashboard', request.url))
   }
 
   // If user is not authenticated and not on login or auth callback, redirect to login
-  if (!user && !isLoginPage && !isAuthCallback && !isRootPage && !isPricingPage) {
+  if (!user && !isLoginPage && !isAuthCallback) {
     return Response.redirect(new URL('/login', request.url))
   }
 

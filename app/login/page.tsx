@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import JsonLd from "../components/JsonLd";
+import { toAbsoluteUrl } from "@/lib/seo";
 import "./login.css";
 
 type AuthMode = "signin" | "signup";
@@ -19,6 +22,24 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
 
   const supabase = createClient();
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: toAbsoluteUrl("/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Log In",
+        item: toAbsoluteUrl("/login"),
+      },
+    ],
+  };
 
   async function handleEmailPassword() {
     if (!email || !password) {
@@ -54,7 +75,7 @@ export default function LoginPage() {
         if (signInError) {
           setError(signInError.message);
         } else {
-          router.push("/");
+          router.push("/dashboard");
         }
       }
     } catch (err) {
@@ -106,7 +127,11 @@ export default function LoginPage() {
 
   return (
     <main className="auth-container">
+      <JsonLd data={breadcrumbSchema} />
       <div className="auth-card">
+        <nav aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <span aria-current="page">Log In</span>
+        </nav>
         {/* Header */}
         <div className="auth-header">
           <h1>Show Settlement Calculator</h1>

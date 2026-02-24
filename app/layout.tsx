@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeToggle from "./components/ThemeToggle";
+import { buildPageMetadata } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,22 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Show Settlement Calculator",
-  description: "Quickly calculate artist and venue payouts for a live show. For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown.",
+  ...buildPageMetadata({
+    title: "GigSettle - Show Settlement Calculator for Venues and Promoters",
+    description:
+      "Create clean settlement packets, export PDFs, and share links instantly. Built for indie venues and promoters who need defensible payout math.",
+    path: "/",
+  }),
   metadataBase: new URL("https://show-settlement-calculator.vercel.app"),
-  openGraph: {
-    title: "Show Settlement Calculator",
-    description: "Free · No login · Just math",
-    url: "https://show-settlement-calculator.vercel.app",
-    images: [
-      {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
-        alt: "Show Settlement Calculator",
-      },
-    ],
-  },
 };
 
 export default function RootLayout({

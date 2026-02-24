@@ -1,10 +1,75 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "../components/JsonLd";
+import { buildPageMetadata, toAbsoluteUrl } from "@/lib/seo";
 import "./pricing.css";
 
+export const metadata: Metadata = buildPageMetadata({
+  title: "Pricing - GigSettle",
+  description:
+    "Compare pay-as-you-go, Pro, and Org plans for settlement workflows. Pick the right plan for your venue or promoter team.",
+  path: "/pricing",
+});
+
 export default function PricingPage() {
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Do I need Pro to share settlements?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No — share links are included on pay-as-you-go.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What makes Pro worth it?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Templates, controls, team roles, and unlimited settlements.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How is Org priced?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Based on number of venues/rooms and settlement volume.",
+        },
+      },
+    ],
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: toAbsoluteUrl("/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Pricing",
+        item: toAbsoluteUrl("/pricing"),
+      },
+    ],
+  };
+
   return (
     <main className="pricing-page">
+      <JsonLd data={faqSchema} />
+      <JsonLd data={breadcrumbSchema} />
       <div className="pricing-back-nav">
+        <nav aria-label="Breadcrumb">
+          <Link href="/">Home</Link> / <span aria-current="page">Pricing</span>
+        </nav>
         <Link href="/" className="pricing-back-btn">
           ← Back to home
         </Link>

@@ -4,9 +4,12 @@ import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
 import { hasProAccessClient } from "@/lib/access/entitlements-client";
+import JsonLd from "./components/JsonLd";
 import ShareLinkManager from "./components/ShareLinkManager";
+import { toAbsoluteUrl } from "@/lib/seo";
 import "./landing.css";
 
 // ============================================
@@ -51,6 +54,22 @@ interface CalculationResult {
   venuePayout: number;       // Amount the venue/promoter keeps
 }
 
+const homepageSoftwareAppSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "GigSettle",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: toAbsoluteUrl("/"),
+  description:
+    "Create clean settlement packets, export PDF reports, and share read-only settlement links for live shows.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -85,10 +104,18 @@ function parseNumber(value: string): number {
 function LandingPage() {
   return (
     <>
+      <JsonLd data={homepageSoftwareAppSchema} />
       <nav className="landing-nav">
         <div className="landing-nav-content">
           <Link href="/" className="landing-nav-logo">
-            <img src="/gigsettle_logo.svg" alt="GigSettle" className="landing-nav-logo-icon" />
+            <Image
+              src="/gigsettle_logo.svg"
+              alt="GigSettle"
+              className="landing-nav-logo-icon"
+              width={40}
+              height={40}
+              priority
+            />
             <span className="landing-nav-logo-text">GigSettle</span>
           </Link>
           <div className="landing-nav-actions">
@@ -104,10 +131,13 @@ function LandingPage() {
       <main className="landing-page">
         <header className="landing-hero">
         <div className="landing-hero-background">
-          <img 
-            src="/concert-hero-1.jpg" 
-            alt="Concert venue atmosphere" 
+          <Image
+            src="/concert-hero-1.jpg"
+            alt="Concert venue atmosphere"
             className="landing-hero-image"
+            width={1920}
+            height={1080}
+            priority
           />
         </div>
         <div className="landing-hero-content">
@@ -177,16 +207,19 @@ function LandingPage() {
             you can stand behind.
           </p>
           <ul className="landing-list">
-            <li>Reduce back-and-forth ("show me the numbers")</li>
+            <li>Reduce back-and-forth (&quot;show me the numbers&quot;)</li>
             <li>Standardize deductions and splits</li>
             <li>Keep a record of what changed and why</li>
           </ul>
         </div>
         <div className="landing-panel-image">
-          <img 
-            src="/concert-hero-2.jpg" 
-            alt="Live music performance" 
+          <Image
+            src="/concert-hero-2.jpg"
+            alt="Live music performance"
             className="landing-accent-image"
+            width={1600}
+            height={1067}
+            loading="lazy"
           />
         </div>
       </section>
@@ -241,10 +274,13 @@ function LandingPage() {
 
       <section className="landing-section landing-panel landing-panel-with-image">
         <div className="landing-panel-image">
-          <img 
-            src="/concert-hero-3.jpg" 
-            alt="Concert crowd" 
+          <Image
+            src="/concert-hero-3.jpg"
+            alt="Concert crowd"
             className="landing-accent-image"
+            width={1600}
+            height={1067}
+            loading="lazy"
           />
         </div>
         <div className="landing-panel-content">
@@ -338,10 +374,13 @@ function LandingPage() {
 
       <section className="landing-section landing-final-cta">
         <div className="landing-final-cta-background">
-          <img 
-            src="/concert-hero-4.jpg" 
-            alt="Live show atmosphere" 
+          <Image
+            src="/concert-hero-4.jpg"
+            alt="Live show atmosphere"
             className="landing-final-cta-image"
+            width={1600}
+            height={1067}
+            loading="lazy"
           />
         </div>
         <div className="landing-final-cta-content">
@@ -1104,10 +1143,13 @@ function CalculatorContent() {
       {/* Footer */}
       <footer className="footer-section">
         <div className="footer-content">
-          <img 
-            src="/my-photo.png" 
-            alt="Founder photo" 
+          <Image
+            src="/my-photo.png"
+            alt="Founder photo"
             className="footer-photo"
+            width={240}
+            height={240}
+            loading="lazy"
           />
           
           <div className="footer-text">
@@ -1132,13 +1174,7 @@ function CalculatorContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <main className="container">
-        <div className="loading-state">
-          <p>Loading...</p>
-        </div>
-      </main>
-    }>
+    <Suspense fallback={<LandingPage />}>
       <CalculatorContent />
     </Suspense>
   );

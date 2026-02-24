@@ -1,12 +1,22 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getEntitlementDetails } from "@/lib/access/entitlements";
 import { getUserSubscription } from "@/lib/stripe/subscription";
+import { buildPageMetadata } from "@/lib/seo";
 import SubscribeButton from "./SubscribeButton";
 import ManageBillingButton from "./ManageBillingButton";
 import ShareLinkCopyButton from "./ShareLinkCopyButton";
 import "./dashboard.css";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Dashboard - GigSettle",
+  description:
+    "Manage saved settlements, billing, and share links in your GigSettle dashboard.",
+  path: "/dashboard",
+  noIndex: true,
+});
 
 // Helper function to format relative time
 function formatRelativeTime(dateString: string): string {

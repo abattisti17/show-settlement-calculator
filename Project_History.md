@@ -2,6 +2,75 @@
 
 ---
 
+---
+### 2026-02-24 — SEO phase 3.1 metadata + crawler access fixes
+**Context:** Validation showed crawler endpoints were still behind auth redirects in production and route metadata from `head.tsx` was not reliably reflected as intended.
+**Decision:** Move SEO metadata to Next.js metadata API (`metadata`/`generateMetadata`), harden public-route bypass in proxy auth logic, and extend robots disallow rules for private app paths.
+**Changes:**
+- Updated `proxy.ts` to centralize public crawler/marketing route bypass:
+  - Public exact routes: `/`, `/pricing`, `/login`, `/robots.txt`, `/sitemap.xml`, `/example-packet.pdf`
+  - Public prefixes: `/s/`, `/blog/`, `/use-cases/`, `/compare/`, `/templates/`
+  - Kept auth redirect behavior for non-public routes.
+- Updated `lib/seo.ts` with `buildPageMetadata(...)` utility for reusable route metadata objects (canonical, OG, Twitter, optional noindex).
+- Reworked route metadata to use Next metadata API:
+  - `app/layout.tsx` now provides root/home metadata via `buildPageMetadata(...)`
+  - `app/pricing/page.tsx` exports `metadata`
+  - `app/dashboard/page.tsx` exports `metadata` with noindex
+  - `app/s/[token]/page.tsx` exports `generateMetadata` with noindex
+  - Added `app/login/layout.tsx` metadata wrapper for client login page
+- Removed legacy head-based SEO files:
+  - deleted `app/head.tsx`
+  - deleted `app/pricing/head.tsx`
+  - deleted `app/login/head.tsx`
+  - deleted `app/dashboard/head.tsx`
+  - deleted `app/s/[token]/head.tsx`
+  - deleted `app/components/SeoHead.tsx`
+- Updated `app/robots.ts` disallow list to include `/app`.
+- Local validation:
+  - `next build` succeeds.
+  - Raw HTML for `/` and `/pricing` now includes title, meta description, canonical, and OG tags.
+  - `/`, `/pricing`, `/robots.txt`, `/sitemap.xml` return `200` unauthenticated locally.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Root metadata is defined at layout level (homepage defaults) and overridden on route pages where needed.
+- Additional public route prefixes are allowlisted to keep future marketing expansions crawler-accessible.
+**Rollback:** Revert changes in `proxy.ts`, `lib/seo.ts`, `app/layout.tsx`, `app/pricing/page.tsx`, `app/dashboard/page.tsx`, `app/s/[token]/page.tsx`, `app/login/layout.tsx`, `app/robots.ts`, and restore deleted `head.tsx` files if needed.
+**Next:** Deploy and re-check production `robots.txt`/`sitemap.xml` for `200` responses and refreshed metadata output.
+---
+
+---
+### 2026-02-24 — SEO phase 2 baseline implementation
+**Context:** The SEO audit identified crawl/indexing gaps (missing sitemap/robots, duplicated metadata, no structured data, and weak server-visible fallback content on `/`).
+**Decision:** Implement a low-risk SEO baseline using App Router-native `head.tsx`, JSON-LD helpers, dynamic sitemap/robots routes, and targeted marketing performance improvements without adding dependencies.
+**Changes:**
+- Added reusable SEO utilities in `lib/seo.ts` and a reusable head fragment in `app/components/SeoHead.tsx`.
+- Added route-specific head files for canonical/title/description/OG/Twitter and noindex controls:
+  - `app/head.tsx`
+  - `app/pricing/head.tsx`
+  - `app/login/head.tsx`
+  - `app/dashboard/head.tsx`
+  - `app/s/[token]/head.tsx`
+- Added structured data helper `app/components/JsonLd.tsx`.
+- Added SoftwareApplication JSON-LD and improved server-visible fallback/rendering strategy in `app/page.tsx`.
+- Added FAQ + Breadcrumb JSON-LD and visible breadcrumb nav in `app/pricing/page.tsx`.
+- Added Breadcrumb JSON-LD and visible breadcrumb nav in `app/login/page.tsx`.
+- Added Breadcrumb JSON-LD in `app/s/[token]/page.tsx`.
+- Improved marketing image handling on `app/page.tsx` by moving key landing images from `<img>` to `next/image` with `priority`/lazy loading.
+- De-duplicated root metadata defaults in `app/layout.tsx`.
+- Added dynamic sitemap and robots routes:
+  - `app/sitemap.ts`
+  - `app/robots.ts`
+- Updated `proxy.ts` to explicitly allow `/robots.txt` and `/sitemap.xml`, and redirect authenticated login access to `/dashboard`.
+- Added immutable cache header config for `/_next/static/*` in `next.config.ts`.
+- Added implementation blueprint in `SEO_PHASE2_IMPLEMENTATION_PLAN.md`.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Root page remains client-driven for app logic, but now serves meaningful fallback HTML for crawlers while preserving current behavior.
+- Robots currently disallows `/login` to reduce low-value indexation; adjust if login discoverability is desired.
+**Rollback:** Revert the files listed above in one commit or `git checkout --` those paths and remove `SEO_PHASE2_IMPLEMENTATION_PLAN.md`.
+**Next:** Consider splitting calculator UX off `/` into a protected route so marketing HTML and app JS are fully decoupled.
+---
+
 ### 2026-01-30 — Theme Toggle in Footer
 **Context:** The fixed toggle felt intrusive.
 **Decision:** Move the theme toggle into a footer container at the bottom of the page.
