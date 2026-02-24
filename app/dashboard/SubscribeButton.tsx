@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 export default function SubscribeButton() {
   const [loading, setLoading] = useState(false);
@@ -37,13 +38,14 @@ export default function SubscribeButton() {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleSubscribe}
         disabled={loading}
-        className="action-btn primary"
+        variant="primary"
+        className="action-btn"
       >
         {loading ? "Loading..." : "Subscribe Now"}
-      </button>
+      </Button>
       {error && <p className="error-message">{error}</p>}
     </>
   );

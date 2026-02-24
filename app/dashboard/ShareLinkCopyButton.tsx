@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 interface ShareLinkCopyButtonProps {
   token: string;
@@ -24,8 +25,8 @@ export default function ShareLinkCopyButton({ token }: ShareLinkCopyButtonProps)
   }
 
   return (
-    <button type="button" onClick={handleCopy} className="share-show-btn">
+    <Button type="button" onClick={handleCopy} variant="ghost" size="sm" className="share-show-btn">
       {copied ? "Copied!" : "Share"}
-    </button>
+    </Button>
   );
 }

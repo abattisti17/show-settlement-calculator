@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 export default function ManageBillingButton() {
   const [loading, setLoading] = useState(false);
@@ -37,13 +38,14 @@ export default function ManageBillingButton() {
 
   return (
     <>
-      <button
+      <Button
         onClick={handleManageBilling}
         disabled={loading}
-        className="action-btn secondary"
+        variant="secondary"
+        className="action-btn"
       >
         {loading ? "Loading..." : "Manage Billing"}
-      </button>
+      </Button>
       {error && <p className="error-message">{error}</p>}
     </>
   );

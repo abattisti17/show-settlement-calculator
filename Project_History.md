@@ -1,6 +1,69 @@
 # Project History (append-only)
 
 ---
+### 2026-02-24 — Popover component + floating account dropdown
+**Context:** Dashboard account dropdown did not float correctly (clipped/constrained by nav). User requested a popover-style dropdown instead of inline expansion.
+**Decision:** Add a reusable `Popover` component that renders via `createPortal` to `document.body` with `position: fixed`, and refactor `AppShell` user menu to use it.
+**Changes:**
+- Added `components/ui/Popover.tsx`: controlled popover with trigger, portal rendering, fixed positioning from trigger rect, click-outside and Escape to close.
+- Added `components/ui/Popover.css`: panel styling (background, border, shadow, z-index).
+- Updated `components/ui/AppShell.tsx`: replaced inline dropdown with `Popover`; trigger remains email+chevron button.
+- Updated `app/design-system/page.tsx`: added Popover section with `PopoverDemo` for preview.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Popover is a new design-system primitive; can be reused for other floating menus.
+- Dropdown content (Badge, Button) already uses design-system components.
+**Rollback:** Revert `components/ui/Popover.tsx`, `components/ui/Popover.css`, `components/ui/AppShell.tsx`, and design-system Popover section.
+**Next:** None.
+---
+### 2026-02-24 — Dashboard account dropdown + nav link removal
+**Context:** Dashboard navbar needed to be simplified and move billing/signout/subscription status into an account menu.
+**Decision:** Hide app nav links on dashboard and use an email+chevron dropdown in `AppShell` for dashboard-specific account actions.
+**Changes:**
+- Updated `components/ui/AppShell.tsx`:
+  - Added `showNavLinks` prop (default `true`) to hide Dashboard/Calculator/Pricing links when needed.
+  - Added `userMenuContent` prop and built a chevron-triggered dropdown next to the account email.
+  - Kept existing mobile menu behavior for routes that still use nav links.
+- Updated `components/ui/AppShell.css`:
+  - Added user-menu trigger, chevron rotation, and dropdown panel styles.
+- Updated `app/dashboard/page.tsx`:
+  - Passed `showNavLinks={false}`.
+  - Moved subscription status, manage billing, and sign-out controls into `userMenuContent`.
+  - Removed in-page dashboard footer action block and no-access sign-out button.
+- Updated `app/dashboard/dashboard.css`:
+  - Added `.dashboard-account-menu` and `.dashboard-account-menu-actions` layout styles for dropdown content.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Dashboard account actions are now one click deeper (in dropdown) for a cleaner main surface.
+- `AppShell` gained dashboard-specific flexibility via additive props.
+**Rollback:** Revert `components/ui/AppShell.tsx`, `components/ui/AppShell.css`, `app/dashboard/page.tsx`, and `app/dashboard/dashboard.css`.
+**Next:** Optionally add click-outside/escape-close behavior to the dropdown if needed.
+---
+### 2026-02-24 — Dashboard migrated to design system components
+**Context:** Needed to migrate `/dashboard` UI to shared design-system primitives without changing dashboard data/auth/subscription logic.
+**Decision:** Keep all server/client logic intact and swap layout/styling wrappers to `AppShell`, `PageHeader`, `Card`, `Button`, and `Badge`.
+**Changes:**
+- Updated `app/dashboard/page.tsx`:
+  - Wrapped dashboard content in `AppShell` (with `userEmail` and sign-out action).
+  - Added `PageHeader` with "Create New Show" primary action.
+  - Replaced show item wrappers, empty state wrapper, subscription footer wrapper, and no-access wrapper with `Card`.
+  - Replaced CTA/action buttons with `Button` variants (primary/secondary/ghost/danger).
+  - Replaced status labels with `Badge` (subscription and share-link states).
+- Updated `components/ui/AppShell.tsx`:
+  - Added optional `signOutAction` prop to support server-form sign-out in navbar (desktop + mobile) without client-side auth logic changes.
+- Updated dashboard client controls:
+  - `app/dashboard/SubscribeButton.tsx` now uses `Button` variant primary.
+  - `app/dashboard/ManageBillingButton.tsx` now uses `Button` variant secondary.
+  - `app/dashboard/ShareLinkCopyButton.tsx` now uses `Button` variant ghost.
+- Updated `app/dashboard/dashboard.css`:
+  - Removed old custom visual styles that overrode DS button variants for open/share buttons; kept only layout-specific rules.
+**Supabase impact:** None.
+**Tradeoffs:**
+- `dashboard.css` now contains some legacy selectors that are no longer referenced and can be removed in a cleanup pass.
+- Navbar sign-out now uses form action prop in shell to preserve existing server-post signout flow.
+**Rollback:** Revert `app/dashboard/page.tsx`, `app/dashboard/dashboard.css`, dashboard button components, and `components/ui/AppShell.tsx`.
+**Next:** Remove dead dashboard CSS selectors after visual QA.
+---
 
 ---
 ### 2026-02-24 — Landing page migrated to design system components

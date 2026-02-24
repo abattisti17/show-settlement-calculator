@@ -1,11 +1,13 @@
 "use client";
 
+import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Popover } from "@/components/ui/Popover";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -59,6 +61,46 @@ function ColorSwatch({ name, cssVar }: { name: string; cssVar: string }) {
         {name}
       </span>
     </div>
+  );
+}
+
+function PopoverDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <button
+          type="button"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.375rem",
+            padding: "0.375rem 0.625rem",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-md)",
+            background: "transparent",
+            cursor: "pointer",
+            fontSize: "var(--text-sm)",
+            color: "var(--color-accent)",
+          }}
+        >
+          user@example.com
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <Badge variant="success">Active Subscription</Badge>
+        <div style={{ paddingTop: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
+          <Button variant="secondary" size="sm" style={{ width: "100%" }}>Manage Billing</Button>
+          <Button variant="danger" size="sm" style={{ width: "100%", marginTop: "0.5rem" }}>Sign Out</Button>
+        </div>
+      </div>
+    </Popover>
   );
 }
 
@@ -246,6 +288,16 @@ export default function DesignSystemPage() {
           <Badge variant="error">Error</Badge>
           <Badge variant="accent">Pro</Badge>
         </Row>
+      </Section>
+
+      {/* Popover */}
+      <Section title="Popover">
+        <Row label="Account menu (floating dropdown)">
+          <PopoverDemo />
+        </Row>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: "0.5rem" }}>
+          Renders via Portal to document.body with position:fixed. Use for floating menus, dropdowns.
+        </p>
       </Section>
 
       {/* PageHeader */}
