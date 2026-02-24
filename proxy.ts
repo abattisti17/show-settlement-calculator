@@ -17,6 +17,7 @@ export async function proxy(request: NextRequest) {
     '/',
     '/pricing',
     '/login',
+    '/design-system',
     '/example-packet.pdf',
     '/robots.txt',
     '/sitemap.xml',

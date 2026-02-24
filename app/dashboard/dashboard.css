@@ -23,7 +23,7 @@
 }
 
 .dashboard-header h1 {
-  font-size: 1.75rem;
+  font-size: var(--text-3xl);
   font-weight: 700;
   color: var(--color-text-strong);
   margin-bottom: 0.75rem;
@@ -32,7 +32,7 @@
 
 .user-email {
   color: var(--color-accent);
-  font-size: 1rem;
+  font-size: var(--text-base);
   font-family: var(--font-geist-mono), monospace;
 }
 
@@ -42,7 +42,7 @@
 
 .dashboard-intro {
   color: var(--color-text-muted);
-  font-size: 1.05rem;
+  font-size: var(--text-base);
   margin-bottom: 2rem;
   line-height: 1.6;
 }
@@ -56,11 +56,11 @@
 .action-btn {
   width: 100%;
   padding: 1rem;
-  font-size: 1.05rem;
+  font-size: var(--text-base);
   font-weight: 600;
   font-family: inherit;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
   text-decoration: none;
@@ -85,8 +85,8 @@
 }
 
 .subscription-status.active {
-  border-color: rgba(72, 187, 120, 0.3);
-  background: rgba(72, 187, 120, 0.05);
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
 }
 
 .status-badge {
@@ -100,18 +100,18 @@
 
 .status-description {
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
 .cancel-notice {
   margin-top: 0.75rem;
   padding: 0.75rem;
-  background: rgba(237, 137, 54, 0.1);
-  border: 1px solid rgba(237, 137, 54, 0.3);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
   border-radius: var(--radius-md);
   color: var(--color-warning);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 /* Subscription Prompt */
@@ -121,7 +121,7 @@
 }
 
 .subscription-prompt h2 {
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--color-text-strong);
   margin-bottom: 1rem;
@@ -130,7 +130,7 @@
 
 .prompt-description {
   color: var(--color-text-muted);
-  font-size: 1rem;
+  font-size: var(--text-base);
   line-height: 1.6;
   margin-bottom: 2rem;
   text-align: center;
@@ -148,7 +148,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: var(--color-text-bright);
+  color: var(--color-text);
 }
 
 .feature-item svg {
@@ -165,7 +165,7 @@
 }
 
 .price {
-  font-size: 2.5rem;
+  font-size: var(--text-5xl);
   font-weight: 700;
   color: var(--color-text-strong);
   margin-bottom: 0.25rem;
@@ -173,13 +173,13 @@
 
 .price-description {
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  font-size: var(--text-sm);
 }
 
 /* Error Message */
 .error-message {
   color: var(--color-error);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   margin-top: 0.5rem;
   text-align: center;
 }
@@ -195,7 +195,7 @@
 }
 
 .dashboard-title-section h1 {
-  font-size: 1.75rem;
+  font-size: var(--text-3xl);
   font-weight: 700;
   color: var(--color-text-strong);
   margin-bottom: 0.5rem;
@@ -203,12 +203,12 @@
 }
 
 .dashboard-title-section .user-email {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .create-show-btn {
   padding: 0.75rem 1.5rem;
-  font-size: 1rem;
+  font-size: var(--text-base);
   font-weight: 600;
   font-family: inherit;
   border-radius: var(--radius-md);
@@ -261,7 +261,7 @@
 }
 
 .show-title {
-  font-size: 1.15rem;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-text-strong);
   margin-bottom: 0.5rem;
@@ -271,7 +271,7 @@
 }
 
 .show-artist {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin-bottom: 0.5rem;
   overflow: hidden;
@@ -280,19 +280,19 @@
 }
 
 .show-timestamp {
-  font-size: 0.85rem;
-  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
   font-family: var(--font-geist-mono), monospace;
 }
 
 .open-show-btn {
   padding: 0.625rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-family: inherit;
-  background: rgba(99, 179, 237, 0.15);
+  background: var(--color-accent-bg);
   color: var(--color-accent);
-  border: 1px solid rgba(99, 179, 237, 0.3);
+  border: 1px solid var(--color-accent-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
@@ -303,8 +303,8 @@
 }
 
 .open-show-btn:hover {
-  background: rgba(99, 179, 237, 0.25);
-  border-color: rgba(99, 179, 237, 0.5);
+  background: var(--color-accent-bg-hover);
+  border-color: var(--color-accent-border-hover);
 }
 
 .show-card-actions {
@@ -326,12 +326,12 @@
 
 .share-show-btn {
   padding: 0.5rem 1rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-family: inherit;
-  background: rgba(72, 187, 120, 0.15);
+  background: var(--color-success-bg);
   color: var(--color-success-strong);
-  border: 1px solid rgba(72, 187, 120, 0.3);
+  border: 1px solid var(--color-success-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
@@ -341,13 +341,13 @@
 }
 
 .share-show-btn:hover {
-  background: rgba(72, 187, 120, 0.25);
-  border-color: rgba(72, 187, 120, 0.5);
+  background: var(--color-success-bg-hover);
+  border-color: var(--color-success-border-hover);
 }
 
 .share-show-disabled {
-  font-size: 0.8rem;
-  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
   font-family: var(--font-geist-mono), monospace;
   padding: 0.5rem 0;
 }
@@ -364,7 +364,7 @@
 
 .empty-state-icon {
   margin-bottom: 1.5rem;
-  color: var(--color-text-dim);
+  color: var(--color-text-faint);
 }
 
 .empty-state-icon svg {
@@ -373,21 +373,21 @@
 }
 
 .empty-state h2 {
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
   font-weight: 600;
-  color: var(--color-text-bright);
+  color: var(--color-text);
   margin-bottom: 0.75rem;
 }
 
 .empty-state p {
-  font-size: 1rem;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
   margin-bottom: 2rem;
 }
 
 .create-show-btn-large {
   padding: 0.875rem 1.75rem;
-  font-size: 1.05rem;
+  font-size: var(--text-base);
   font-weight: 600;
   font-family: inherit;
   border-radius: var(--radius-md);
@@ -427,7 +427,7 @@
   gap: 0.5rem;
   color: var(--color-success);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .subscription-badge svg {
@@ -436,7 +436,7 @@
 
 .subscription-notice {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   margin: 0;
 }
 
@@ -486,15 +486,15 @@
   }
 
   .dashboard-header h1 {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
   }
 
   .dashboard-title-section h1 {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
   }
 
   .subscription-prompt h2 {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
   }
 
   .price {

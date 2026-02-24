@@ -24,7 +24,7 @@
 }
 
 .auth-header h1 {
-  font-size: 1.75rem;
+  font-size: var(--text-3xl);
   font-weight: 700;
   color: var(--color-text-strong);
   margin-bottom: 0.5rem;
@@ -33,7 +33,7 @@
 
 .auth-header p {
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  font-size: var(--text-sm);
 }
 
 /* Mode Toggle (Sign In / Sign Up) */
@@ -49,13 +49,13 @@
 .auth-mode-toggle button {
   flex: 1;
   padding: 0.625rem;
-  font-size: 0.95rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-family: inherit;
   background: transparent;
   color: var(--color-text-muted);
   border: none;
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -63,12 +63,12 @@
 .auth-mode-toggle button.active {
   background: var(--gradient-primary);
   color: var(--color-text-strong);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px var(--color-accent-border);
 }
 
 .auth-mode-toggle button:not(.active):hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-text-soft);
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 /* Method Toggle (Password / Magic Link) */
@@ -84,11 +84,11 @@
 .auth-method-toggle button {
   flex: 1;
   padding: 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   font-family: inherit;
   background: transparent;
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -96,7 +96,7 @@
 }
 
 .auth-method-toggle button.active {
-  background: rgba(99, 179, 237, 0.2);
+  background: var(--color-accent-bg-hover);
   color: var(--color-accent);
 }
 
@@ -109,7 +109,7 @@
 .auth-submit-btn {
   width: 100%;
   padding: 1rem;
-  font-size: 1.05rem;
+  font-size: var(--text-base);
   font-weight: 600;
   font-family: inherit;
   border-radius: var(--radius-lg);
@@ -134,21 +134,21 @@
 /* Helper text */
 .auth-helper-text {
   text-align: center;
-  color: var(--color-text-subtle);
-  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
   margin-top: 1.5rem;
   line-height: 1.6;
 }
 
 /* Success message */
 .success-message {
-  background: rgba(72, 187, 120, 0.15);
-  border: 1px solid rgba(72, 187, 120, 0.3);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
   color: var(--color-success-strong);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   margin-bottom: 1rem;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 /* Responsive */
@@ -158,6 +158,6 @@
   }
 
   .auth-header h1 {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
   }
 }
