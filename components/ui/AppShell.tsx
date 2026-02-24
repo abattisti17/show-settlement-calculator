@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Popover } from "./Popover";
+import { Icon } from "./Icon";
 import "./AppShell.css";
 
 export interface AppShellProps {
@@ -73,20 +74,12 @@ export function AppShell({
                     aria-expanded={userMenuOpen}
                   >
                     <span className="ds-app-nav-user">{userEmail}</span>
-                    <svg
+                    <Icon
+                      name="chevron"
+                      size={18}
+                      direction="down"
                       className={`ds-app-user-menu-chevron ${userMenuOpen ? "open" : ""}`}
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M6 9l6 6 6-6" />
-                    </svg>
+                    />
                   </button>
                 }
               >

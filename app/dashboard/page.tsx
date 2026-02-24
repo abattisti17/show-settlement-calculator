@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/ui/AppShell";
+import { AppAccountMenu } from "@/components/ui/AppAccountMenu";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +12,6 @@ import { getEntitlementDetails } from "@/lib/access/entitlements";
 import { getUserSubscription } from "@/lib/stripe/subscription";
 import { buildPageMetadata } from "@/lib/seo";
 import SubscribeButton from "./SubscribeButton";
-import ManageBillingButton from "./ManageBillingButton";
 import ShareLinkCopyButton from "./ShareLinkCopyButton";
 import "./dashboard.css";
 
@@ -91,36 +91,16 @@ export default async function DashboardPage() {
       userEmail={user.email ?? undefined}
       showNavLinks={false}
       userMenuContent={
-        <div className="dashboard-account-menu">
-          <Badge variant={hasAccess ? "success" : "warning"} className="subscription-badge">
-            {hasAccess
-              ? isStripeSource
-                ? "Active Subscription"
-                : "Pro Access"
-              : "No Active Subscription"}
-          </Badge>
-
-          {hasAccess && isStripeSource && subscription?.cancel_at_period_end && subscription.current_period_end && (
-            <p className="subscription-notice">
-              Ends {new Date(subscription.current_period_end).toLocaleDateString()}
-            </p>
-          )}
-
-          {hasAccess && !isStripeSource && entitlement?.expires_at && (
-            <p className="subscription-notice">
-              Expires {new Date(entitlement.expires_at).toLocaleDateString()}
-            </p>
-          )}
-
-          <div className="dashboard-account-menu-actions">
-            {hasAccess && isStripeSource && <ManageBillingButton />}
-            <form action="/auth/signout" method="post">
-              <Button type="submit" variant="danger" className="action-btn">
-                Sign Out
-              </Button>
-            </form>
-          </div>
-        </div>
+        <AppAccountMenu
+          initialData={{
+            hasAccess,
+            isStripeSource,
+            entitlement: entitlement ? { source: entitlement.source, expires_at: entitlement.expires_at } : null,
+            subscription: subscription
+              ? { cancel_at_period_end: subscription.cancel_at_period_end, current_period_end: subscription.current_period_end }
+              : null,
+          }}
+        />
       }
     >
       <div className="dashboard-container">

@@ -1,6 +1,69 @@
 # Project History (append-only)
 
 ---
+### 2026-02-24 — Full dsys for calculator footer (SectionFooter + AuthorCard)
+**Context:** Calculator footer used Card but had hardcoded background, spacing, avatar size, and line-height.
+**Decision:** Add missing dsys tokens and two new components so the footer is fully design-system driven.
+**Changes:**
+- Added tokens to `:root`, light, and `prefers-color-scheme` blocks in `app/globals.css`:
+  - `--color-overlay` (dark: rgba(0,0,0,0.2); light: rgba(0,0,0,0.06))
+  - `--leading-loose: 1.7`
+  - `--size-avatar-sm: 40px`, `--size-avatar: 64px`, `--size-avatar-lg: 96px`
+- Added `components/ui/SectionFooter.tsx` + `.css`: full-bleed dark panel wrapper with max-width.
+- Added `components/ui/AuthorCard.tsx` + `.css`: avatar + bio text card using all dsys tokens.
+- Updated `app/page.tsx`: calculator footer uses `<SectionFooter>` + `<AuthorCard>`.
+- Removed dead `calculator-footer-*` styles from `app/calculator.css`.
+- Updated print styles in `globals.css` to hide `.ds-section-footer`.
+- Added SectionFooter + AuthorCard section to design-system preview.
+**Supabase impact:** None.
+**Rollback:** Revert app/page.tsx, app/calculator.css, globals.css; delete SectionFooter.tsx/.css, AuthorCard.tsx/.css.
+---
+### 2026-02-24 — Calculator footer migrated to Card
+**Context:** User requested migrating the about/contact footer at the bottom of the calculator to the design system.
+**Decision:** Replace footer-content div with Card component; move layout styles to calculator.css.
+**Changes:**
+- Updated `app/page.tsx`: footer section now uses `<Card variant="default" padding="lg">` with calculator-footer-* classes.
+- Updated `app/calculator.css`: added calculator-footer-section, calculator-footer-card, calculator-footer-inner, calculator-footer-photo, calculator-footer-text, etc.
+- Updated `app/globals.css`: print styles now hide calculator-footer-section.
+- Updated `CALCULATOR_MIGRATION.md`: component swap and dead CSS entry.
+**Supabase impact:** None.
+**Rollback:** Revert app/page.tsx, app/calculator.css, globals.css print block.
+---
+### 2026-02-24 — Unified app nav for logged-in pages
+**Context:** Calculator used different nav (Dashboard/Calculator/Pricing links + sign out). User wanted same nav as dashboard whenever logged in.
+**Decision:** Use AppShell with showNavLinks=false and account dropdown (AppAccountMenu) for all logged-in pages. MarketingShell for logged-out/landing.
+**Changes:**
+- Added `app/api/account/route.ts`: GET returns hasAccess, isStripeSource, entitlement, subscription for authenticated user.
+- Added `components/ui/AppAccountMenu.tsx`: shared account dropdown (Badge, Manage Billing, Sign Out). Accepts optional initialData to skip fetch.
+- Updated `app/page.tsx`: calculator/paywall/loading use showNavLinks={false} and userMenuContent={<AppAccountMenu />}.
+- Updated `app/dashboard/page.tsx`: uses AppAccountMenu with initialData from server (no refetch).
+**Supabase impact:** None.
+**Tradeoffs:**
+- Calculator fetches /api/account on mount for menu data; dashboard passes from server.
+**Rollback:** Revert app/page.tsx, app/dashboard/page.tsx; delete app/api/account/route.ts, components/ui/AppAccountMenu.tsx.
+**Next:** None.
+---
+### 2026-02-24 — Calculator page migrated to design system
+**Context:** Migrate the main calculator page (/) to use design system components without changing logic.
+**Decision:** Wrap in AppShell, replace inputs/selects/buttons/cards with design system components, add PageHeader.
+**Changes:**
+- Updated `app/page.tsx`:
+  - Wrapped calculator (loading, paywall, main) in `AppShell` with signOutAction.
+  - Replaced user header with `PageHeader` (title, description, action: Back to Dashboard + Save Show).
+  - Replaced all `<input>` with `<Input>`, `<select>` with `<Select>`.
+  - Replaced buttons: Calculate → Button primary lg; Save Show → Button primary sm; Print → Button secondary; Back to Dashboard → Button ghost sm.
+  - Replaced form section, results card, paywall card with `Card`.
+  - Removed unused handleSignOut (AppShell uses signOutAction).
+- Added `app/calculator.css`: calculator layout, form grid, result rows, paywall, save status.
+- Updated `app/globals.css`: added print rules for calculator-form-section, calculator-save-status, calculator-print-btn.
+- Added `CALCULATOR_MIGRATION.md`: component swap list and dead CSS classes.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Legacy globals.css calculator styles kept for print compatibility and other pages.
+- ShareLinkManager unchanged (uses share-link-* classes).
+**Rollback:** Revert app/page.tsx, delete app/calculator.css, revert globals.css print block, delete CALCULATOR_MIGRATION.md.
+**Next:** Optionally migrate ShareLinkManager buttons to Button.
+---
 ### 2026-02-24 — Popover component + floating account dropdown
 **Context:** Dashboard account dropdown did not float correctly (clipped/constrained by nav). User requested a popover-style dropdown instead of inline expansion.
 **Decision:** Add a reusable `Popover` component that renders via `createPortal` to `document.body` with `position: fixed`, and refactor `AppShell` user menu to use it.

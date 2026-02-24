@@ -11,9 +11,18 @@ import JsonLd from "./components/JsonLd";
 import ShareLinkManager from "./components/ShareLinkManager";
 import { toAbsoluteUrl } from "@/lib/seo";
 import { MarketingShell } from "@/components/ui/MarketingShell";
+import { AppShell } from "@/components/ui/AppShell";
+import { AppAccountMenu } from "@/components/ui/AppAccountMenu";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionFooter } from "@/components/ui/SectionFooter";
+import { AuthorCard } from "@/components/ui/AuthorCard";
+import { Icon } from "@/components/ui/Icon";
 import "./landing.css";
+import "./calculator.css";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -537,14 +546,6 @@ function CalculatorContent() {
     }
   }, [searchParams, user, loadingAccess, supabase]);
 
-  /**
-   * Handle sign out
-   */
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push("/login");
-  }
-
   // -----------------------------------------
   // EVENT HANDLERS
   // -----------------------------------------
@@ -802,11 +803,13 @@ function CalculatorContent() {
   // Show loading state while checking access
   if (loadingAccess) {
     return (
-      <main className="container">
-        <div className="loading-state">
-          <p>Loading...</p>
+      <AppShell maxWidth={720} userEmail={user?.email ?? undefined} showNavLinks={false} userMenuContent={<AppAccountMenu />}>
+        <div className="calculator-container">
+          <div className="calculator-loading">
+            <p>Loading...</p>
+          </div>
         </div>
-      </main>
+      </AppShell>
     );
   }
 
@@ -817,200 +820,161 @@ function CalculatorContent() {
   // Show paywall if user is logged in but doesn't have pro access
   if (user && !hasAccess) {
     return (
-      <main className="container">
-        {/* User Header */}
-        <div className="user-header">
-          <span className="user-email">{user.email}</span>
-          <button onClick={handleSignOut} className="logout-btn">
-            Sign Out
-          </button>
-        </div>
+      <AppShell maxWidth={720} userEmail={user.email ?? undefined} showNavLinks={false} userMenuContent={<AppAccountMenu />}>
+        <div className="calculator-container">
+          <div className="calculator-paywall">
+            <Card className="paywall-card" variant="elevated" padding="lg">
+              <h1>Subscribe to Access the Calculator</h1>
+              <p className="paywall-description">
+                A subscription is required to use the Show Settlement Calculator. 
+                Get instant access to unlimited calculations and save your settlements.
+              </p>
+              
+              <div className="calculator-paywall-features">
+                <div className="calculator-paywall-feature">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>Unlimited calculations</span>
+                </div>
+                <div className="calculator-paywall-feature">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>Save and share settlements</span>
+                </div>
+                <div className="calculator-paywall-feature">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>Access from any device</span>
+                </div>
+              </div>
 
-        {/* Paywall */}
-        <div className="paywall">
-          <div className="paywall-card">
-            <h1>Subscribe to Access the Calculator</h1>
-            <p className="paywall-description">
-              A subscription is required to use the Show Settlement Calculator. 
-              Get instant access to unlimited calculations and save your settlements.
-            </p>
-            
-            <div className="paywall-features">
-              <div className="paywall-feature">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span>Unlimited calculations</span>
-              </div>
-              <div className="paywall-feature">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span>Save and share settlements</span>
-              </div>
-              <div className="paywall-feature">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M7 12l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span>Access from any device</span>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => router.push('/dashboard')}
-              className="paywall-btn"
-            >
-              View Plans & Subscribe
-            </button>
+              <Button onClick={() => router.push('/dashboard')} variant="primary" size="lg">
+                View Plans & Subscribe
+              </Button>
+            </Card>
           </div>
         </div>
-      </main>
+      </AppShell>
     );
   }
 
   return (
     <>
-    <main className="container">
-      {/* User Header */}
-      {user && (
-        <div className="user-header">
-          <div className="user-header-left">
-            <span className="user-email">{user.email}</span>
-          </div>
-          <div className="user-header-actions">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="dashboard-link-btn"
-            >
-              Back to Dashboard
-            </button>
-            <button
+    <AppShell maxWidth={720} userEmail={user.email ?? undefined} showNavLinks={false} userMenuContent={<AppAccountMenu />}>
+      <div className="calculator-container">
+        <Button
+          onClick={() => router.push('/dashboard')}
+          variant="ghost"
+          size="sm"
+          style={{ marginBottom: "1rem" }}
+        >
+          <Icon name="chevron" size={14} direction="left" /> Back to Dashboard
+        </Button>
+
+        <PageHeader
+          title="Show Settlement Calculator"
+          description="Quickly calculate artist and venue payouts for a live show. For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown."
+          action={
+            <Button
               onClick={handleSaveShow}
               disabled={!result || saveStatus === 'saving'}
-              className="save-show-btn"
+              variant="primary"
+              size="sm"
+              loading={saveStatus === 'saving'}
             >
-              {saveStatus === 'saving' ? 'Saving...' : currentShowId ? 'Update Show' : 'Save Show'}
-            </button>
-            <button onClick={handleSignOut} className="logout-btn">
-              Sign Out
-            </button>
+              {currentShowId ? 'Update Show' : 'Save Show'}
+            </Button>
+          }
+        />
+
+        {/* Save Status Message */}
+        {saveMessage && (
+          <div className={`calculator-save-status ${saveStatus === 'success' ? 'success' : 'error'}`}>
+            {saveMessage}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Header */}
-      <header className="header">
-        <h1>Show Settlement Calculator</h1>
-        <p>Quickly calculate artist and venue payouts for a live show.
-        <br /> <br />
-        For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown.
-        </p>
-      </header>
-
-      {/* Save Status Message */}
-      {saveMessage && (
-        <div className={`save-status-message ${saveStatus === 'success' ? 'success' : 'error'}`}>
-          {saveMessage}
-        </div>
-      )}
-
-      {/* Section 1: Input Form */}
-      <section className="section">
-        {/* Show Info */}
-        <h3 className="section-title">Show Info</h3>
-        <div className="form-group">
-          <label htmlFor="showName">Show Name</label>
-          <input
-            type="text"
+        {/* Section 1: Input Form */}
+        <Card className="calculator-form-section" variant="default" padding="lg">
+          <h3 className="calculator-section-title">Show Info</h3>
+          <Input
             id="showName"
             name="showName"
+            label="Show Name"
             value={formData.showName}
             onChange={handleInputChange}
             placeholder="ex: Summer Festival 2026"
           />
-        </div>
-        <div className="form-group">
-          <label htmlFor="artistName">Artist / Band Name</label>
-          <input
-            type="text"
+          <Input
             id="artistName"
             name="artistName"
+            label="Artist / Band Name"
             value={formData.artistName}
             onChange={handleInputChange}
             placeholder="ex: The Rolling Stones"
           />
-        </div>
 
-        {/* Ticket Info */}
-        <h3 className="section-title">Ticket Info</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="ticketPrice">Ticket Price ($)</label>
-            <input
-              type="number"
+          <h3 className="calculator-section-title">Ticket Info</h3>
+          <div className="calculator-form-row">
+            <Input
               id="ticketPrice"
               name="ticketPrice"
+              label="Ticket Price ($)"
+              type="number"
               value={formData.ticketPrice}
               onChange={handleInputChange}
               placeholder="ex: 25"
-              min="0"
-              step="0.01"
+              min={0}
+              step={0.01}
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="ticketsSold">Tickets Sold</label>
-            <input
-              type="number"
+            <Input
               id="ticketsSold"
               name="ticketsSold"
+              label="Tickets Sold"
+              type="number"
               value={formData.ticketsSold}
               onChange={handleInputChange}
               placeholder="ex: 200"
-              min="0"
-              step="1"
+              min={0}
+              step={1}
             />
           </div>
-        </div>
 
-        {/* Tax & Expenses */}
-        <h3 className="section-title">Tax & Expenses</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="taxRate">Tax Rate (%)</label>
-            <input
-              type="number"
+          <h3 className="calculator-section-title">Tax & Expenses</h3>
+          <div className="calculator-form-row">
+            <Input
               id="taxRate"
               name="taxRate"
+              label="Tax Rate (%)"
+              type="number"
               value={formData.taxRate}
               onChange={handleInputChange}
               placeholder="ex: 10"
-              min="0"
-              max="100"
-              step="0.1"
+              min={0}
+              max={100}
+              step={0.1}
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="totalExpenses">Total Expenses ($)</label>
-            <input
-              type="number"
+            <Input
               id="totalExpenses"
               name="totalExpenses"
+              label="Total Expenses ($)"
+              type="number"
               value={formData.totalExpenses}
               onChange={handleInputChange}
               placeholder="ex: 500"
-              min="0"
-              step="0.01"
+              min={0}
+              step={0.01}
             />
           </div>
-        </div>
 
-        {/* Deal Type & Deal Inputs */}
-        <h3 className="section-title">Deal Structure</h3>
-        <div className="form-group">
-          <label htmlFor="dealType">Deal Type</label>
-          <select
+          <h3 className="calculator-section-title">Deal Structure</h3>
+          <Select
             id="dealType"
             name="dealType"
+            label="Deal Type"
             value={formData.dealType}
             onChange={handleInputChange}
           >
@@ -1019,147 +983,127 @@ function CalculatorContent() {
             <option value="guarantee_vs_percentage">
               Guarantee vs Percentage (whichever is higher)
             </option>
-          </select>
-        </div>
+          </Select>
 
-        {/* Conditionally show deal-specific inputs */}
-        <div className="form-row">
-          {/* Show Guarantee input for "guarantee" or "guarantee_vs_percentage" */}
-          {(formData.dealType === "guarantee" ||
-            formData.dealType === "guarantee_vs_percentage") && (
-            <div className="form-group">
-              <label htmlFor="guarantee">Guarantee Amount ($)</label>
-              <input
-                type="number"
+          {/* Conditionally show deal-specific inputs */}
+          <div className="calculator-form-row">
+            {(formData.dealType === "guarantee" ||
+              formData.dealType === "guarantee_vs_percentage") && (
+              <Input
                 id="guarantee"
                 name="guarantee"
+                label="Guarantee Amount ($)"
+                type="number"
                 value={formData.guarantee}
                 onChange={handleInputChange}
                 placeholder="ex: 1000"
-                min="0"
-                step="0.01"
+                min={0}
+                step={0.01}
               />
-            </div>
-          )}
-
-          {/* Show Percentage input for "percentage" or "guarantee_vs_percentage" */}
-          {(formData.dealType === "percentage" ||
-            formData.dealType === "guarantee_vs_percentage") && (
-            <div className="form-group">
-              <label htmlFor="percentage">Percentage (%)</label>
-              <input
-                type="number"
+            )}
+            {(formData.dealType === "percentage" ||
+              formData.dealType === "guarantee_vs_percentage") && (
+              <Input
                 id="percentage"
                 name="percentage"
+                label="Percentage (%)"
+                type="number"
                 value={formData.percentage}
                 onChange={handleInputChange}
                 placeholder="ex: 80"
-                min="0"
-                max="100"
-                step="0.1"
+                min={0}
+                max={100}
+                step={0.1}
               />
+            )}
+          </div>
+
+          {errorMessage && (
+            <div className="calculator-save-status error" style={{ marginTop: "1rem" }}>
+              {errorMessage}
             </div>
           )}
-        </div>
 
-        {/* Error Message */}
-        {errorMessage && <div className="error-message">{errorMessage}</div>}
+          <Button type="button" variant="primary" size="lg" onClick={handleCalculate} style={{ width: "100%", marginTop: "1rem" }}>
+            Calculate Settlement
+          </Button>
+        </Card>
 
-        {/* Calculate Button */}
-        <button type="button" className="calculate-btn" onClick={handleCalculate}>
-          Calculate Settlement
-        </button>
-      </section>
+        {/* Section 2: Results */}
+        {result && (
+          <section className="results-section" style={{ marginTop: "2rem" }}>
+            <Card className="results-card" variant="elevated" padding="lg">
+              <h2>Settlement Summary</h2>
 
-      {/* Section 2: Results */}
-      {result && (
-        <section className="section results-section">
-          <div className="results-card">
-            <h2>Settlement Summary</h2>
+              {formData.artistName && (
+                <p className="artist-name-display">
+                  Settlement for: {formData.artistName}
+                </p>
+              )}
 
-            {/* Show artist name if provided */}
-            {formData.artistName && (
-              <p className="artist-name-display">
-                Settlement for: {formData.artistName}
-              </p>
-            )}
+              <div className="calculator-result-row result-row">
+                <span className="label">Gross Revenue</span>
+                <span className="value">{formatCurrency(result.grossRevenue)}</span>
+              </div>
 
-            {/* Revenue breakdown */}
-            <div className="result-row">
-              <span className="label">Gross Revenue</span>
-              <span className="value">{formatCurrency(result.grossRevenue)}</span>
-            </div>
+              <div className="calculator-result-row result-row">
+                <span className="label">Tax</span>
+                <span className="value">−{formatCurrency(result.taxAmount)}</span>
+              </div>
 
-            <div className="result-row">
-              <span className="label">Tax</span>
-              <span className="value">−{formatCurrency(result.taxAmount)}</span>
-            </div>
+              <div className="calculator-result-row result-row">
+                <span className="label">Expenses</span>
+                <span className="value">−{formatCurrency(result.totalExpenses)}</span>
+              </div>
 
-            <div className="result-row">
-              <span className="label">Expenses</span>
-              <span className="value">−{formatCurrency(result.totalExpenses)}</span>
-            </div>
+              <div className="calculator-result-row result-row highlight">
+                <span className="label">Net</span>
+                <span className="value">{formatCurrency(result.netProfit)}</span>
+              </div>
 
-            <div className="result-row highlight">
-              <span className="label">Net</span>
-              <span className="value">{formatCurrency(result.netProfit)}</span>
-            </div>
+              <div className="calculator-result-row result-row highlight artist-payout">
+                <span className="label">Artist Payout</span>
+                <span className="value">{formatCurrency(result.artistPayout)}</span>
+              </div>
 
-            {/* Payout breakdown */}
-            <div className="result-row highlight artist-payout">
-              <span className="label">Artist Payout</span>
-              <span className="value">{formatCurrency(result.artistPayout)}</span>
-            </div>
+              <div className="calculator-result-row result-row highlight venue-payout">
+                <span className="label">Promoter/House Settlement</span>
+                <span className="value">{formatCurrency(result.venuePayout)}</span>
+              </div>
 
-            <div className="result-row highlight venue-payout">
-              <span className="label">Promoter/House Settlement</span>
-              <span className="value">{formatCurrency(result.venuePayout)}</span>
-            </div>
+              <Button variant="secondary" onClick={handlePrint} className="calculator-print-btn" style={{ width: "100%", marginTop: "1.25rem" }}>
+                🖨️ Print / Save as PDF
+              </Button>
+            </Card>
+          </section>
+        )}
 
-            {/* Print Button */}
-            <button className="print-btn" onClick={handlePrint}>
-              🖨️ Print / Save as PDF
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Share Link Manager - only show when show is saved */}
-      {currentShowId && result && user && (
-        <section className="section">
-          <ShareLinkManager showId={currentShowId} showName={formData.showName} />
-        </section>
-      )}
-      </main>
+        {/* Share Link Manager */}
+        {currentShowId && result && user && (
+          <section style={{ marginTop: "2rem" }}>
+            <ShareLinkManager showId={currentShowId} showName={formData.showName} />
+          </section>
+        )}
+      </div>
 
       {/* Footer */}
-      <footer className="footer-section">
-        <div className="footer-content">
-          <Image
-            src="/my-photo.png"
-            alt="Founder photo"
-            className="footer-photo"
-            width={240}
-            height={240}
-            loading="lazy"
-          />
-          
-          <div className="footer-text">
-            <p>
-              Hi, I&apos;m Alessandro, an indie designer exploring tools for small venues and indie promoters. 
-              I created this free settlement calculator because so many people still struggle 
-              with spreadsheets and inconsistent deal sheets.
-            </p>
-            <p className="footer-email">
-              If you have questions, ideas, or requests, email me directly at
-              <a href="mailto:abattisti@proton.me">
-                abattisti@proton.me
-              </a>.
-            </p>
-            <p className="footer-cheers">Cheers!</p>
-          </div>
-        </div>
-      </footer>
+      <SectionFooter>
+        <AuthorCard imageSrc="/my-photo.png" imageAlt="Founder photo">
+          <p>
+            Hi, I&apos;m Alessandro, an indie designer exploring tools for small venues and indie promoters. 
+            I created this free settlement calculator because so many people still struggle 
+            with spreadsheets and inconsistent deal sheets.
+          </p>
+          <p style={{ marginTop: "0.75rem" }}>
+            If you have questions, ideas, or requests, email me directly at
+            <a href="mailto:abattisti@proton.me"> abattisti@proton.me</a>.
+          </p>
+          <p style={{ marginTop: "0.5rem", color: "var(--color-text)", fontWeight: "var(--font-medium)" as unknown as number }}>
+            Cheers!
+          </p>
+        </AuthorCard>
+      </SectionFooter>
+    </AppShell>
     </>
   );
 }

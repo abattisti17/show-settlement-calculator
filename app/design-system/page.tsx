@@ -8,6 +8,9 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Popover } from "@/components/ui/Popover";
+import { SectionFooter } from "@/components/ui/SectionFooter";
+import { AuthorCard } from "@/components/ui/AuthorCard";
+import { Icon } from "@/components/ui/Icon";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -175,6 +178,7 @@ export default function DesignSystemPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {[
             { token: "--text-xs", label: "text-xs (0.75rem / 12px)" },
+            { token: "--text-footer", label: "text-footer (0.75rem / 12px) — footer, captions, fine print" },
             { token: "--text-sm", label: "text-sm (0.875rem / 14px)" },
             { token: "--text-base", label: "text-base (1rem / 16px)" },
             { token: "--text-lg", label: "text-lg (1.125rem / 18px)" },
@@ -253,6 +257,42 @@ export default function DesignSystemPage() {
             <option value="">Choose…</option>
           </Select>
         </div>
+      </Section>
+
+      {/* Icon */}
+      <Section title="Icon">
+        <Row label="Chevron — all directions">
+          <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+              <Icon name="chevron" direction="up" size={20} />
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>up</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+              <Icon name="chevron" direction="down" size={20} />
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>down</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+              <Icon name="chevron" direction="left" size={20} />
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>left</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+              <Icon name="chevron" direction="right" size={20} />
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>right</span>
+            </div>
+          </div>
+        </Row>
+        <Row label="Sizes">
+          <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
+            <Icon name="chevron" size={12} />
+            <Icon name="chevron" size={16} />
+            <Icon name="chevron" size={20} />
+            <Icon name="chevron" size={24} />
+          </div>
+        </Row>
+        <Row label="In a button">
+          <Button variant="ghost" size="sm"><Icon name="chevron" size={14} direction="left" /> Back</Button>
+          <Button variant="secondary" size="sm">Next <Icon name="chevron" size={14} direction="right" /></Button>
+        </Row>
       </Section>
 
       {/* Cards */}
@@ -334,6 +374,26 @@ export default function DesignSystemPage() {
             </div>
           ))}
         </Row>
+      </Section>
+
+      {/* SectionFooter + AuthorCard */}
+      <Section title="SectionFooter + AuthorCard">
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginBottom: "1rem" }}>
+          Full-bleed dark panel with avatar + bio card. Used for page footers.
+        </p>
+        <div style={{ borderRadius: "var(--radius-xl)", overflow: "hidden", border: "1px solid var(--color-border)" }}>
+          <SectionFooter>
+            <AuthorCard imageSrc="/my-photo.png" imageAlt="Example avatar">
+              <p>
+                Hi, I&apos;m a designer building tools for indie venues.
+              </p>
+              <p style={{ marginTop: "0.75rem" }}>
+                Questions? Email <a href="mailto:test@example.com">test@example.com</a>.
+              </p>
+              <p style={{ marginTop: "0.5rem", color: "var(--color-text)", fontWeight: 500 }}>Cheers!</p>
+            </AuthorCard>
+          </SectionFooter>
+        </div>
       </Section>
 
       {/* Contrast check */}
