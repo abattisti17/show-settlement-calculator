@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
 import ManageBillingButton from "@/app/dashboard/ManageBillingButton";
+import { ThemeToggle } from "./ThemeToggle";
 import "@/app/dashboard/dashboard.css";
 
 export interface AppAccountMenuData {
@@ -62,6 +63,10 @@ export function AppAccountMenu({ initialData }: AppAccountMenuProps) {
   if (loading || !data) {
     return (
       <div className="dashboard-account-menu">
+        <div className="dashboard-account-menu-theme">
+          <span className="dashboard-account-menu-theme-label">Theme</span>
+          <ThemeToggle />
+        </div>
         <div className="dashboard-account-menu-actions">
           <form action="/auth/signout" method="post">
             <Button type="submit" variant="danger" className="action-btn">
@@ -96,6 +101,11 @@ export function AppAccountMenu({ initialData }: AppAccountMenuProps) {
           Expires {new Date(entitlement.expires_at).toLocaleDateString()}
         </p>
       )}
+
+      <div className="dashboard-account-menu-theme">
+        <span className="dashboard-account-menu-theme-label">Theme</span>
+        <ThemeToggle />
+      </div>
 
       <div className="dashboard-account-menu-actions">
         {hasAccess && isStripeSource && <ManageBillingButton />}

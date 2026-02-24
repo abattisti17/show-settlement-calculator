@@ -93,6 +93,7 @@ export function Popover({
               position: "fixed",
               top: position.top,
               left: position.left,
+              width: 280,
               minWidth: 280,
             }}
           >

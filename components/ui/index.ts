@@ -24,3 +24,6 @@ export type { MarketingShellProps } from "./MarketingShell";
 
 export { SegmentedControl } from "./SegmentedControl";
 export type { SegmentedControlProps, SegmentedControlOption } from "./SegmentedControl";
+
+export { ThemeToggle } from "./ThemeToggle";
+export type { ThemeMode } from "./ThemeToggle";

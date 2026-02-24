@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Popover } from "./Popover";
 import { Icon } from "./Icon";
+import { SectionFooter } from "./SectionFooter";
+import { AuthorCard } from "./AuthorCard";
 import "./AppShell.css";
 
 export interface AppShellProps {
@@ -15,6 +17,7 @@ export interface AppShellProps {
   signOutAction?: string;
   showNavLinks?: boolean;
   userMenuContent?: React.ReactNode;
+  showFooter?: boolean;
   className?: string;
 }
 
@@ -26,6 +29,7 @@ export function AppShell({
   signOutAction,
   showNavLinks = true,
   userMenuContent,
+  showFooter = true,
   className,
 }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -163,9 +167,24 @@ export function AppShell({
         {children}
       </main>
 
-      <footer className="ds-app-footer">
-        {/* ThemeToggle rendered by root layout */}
-      </footer>
+      {showFooter && (
+        <SectionFooter>
+          <AuthorCard imageSrc="/my-photo.png" imageAlt="Founder photo">
+            <p>
+              Hi, I&apos;m Alessandro, an indie designer exploring tools for small venues and indie promoters.
+              I created this free settlement calculator because so many people still struggle
+              with spreadsheets and inconsistent deal sheets.
+            </p>
+            <p style={{ marginTop: "0.75rem" }}>
+              If you have questions, ideas, or requests, email me directly at
+              <a href="mailto:abattisti@proton.me"> abattisti@proton.me</a>.
+            </p>
+            <p style={{ marginTop: "0.5rem", color: "var(--color-text)", fontWeight: "var(--font-medium)" as unknown as number }}>
+              Cheers!
+            </p>
+          </AuthorCard>
+        </SectionFooter>
+      )}
     </div>
   );
 }

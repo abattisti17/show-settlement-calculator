@@ -666,3 +666,76 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 **Rollback:** Revert changes to `app/page.tsx` and `app/landing.css` for navigation sections.
 **Next:** Consider adding links to pricing page in navigation.
 ---
+
+---
+### 2026-02-24 — Server/client split for calculator page
+**Context:** The calculator page (`/`) was a single `"use client"` component that performed auth and entitlement checks client-side, causing a visible loading delay (especially in the account dropdown) compared to the dashboard which uses server-side data fetching.
+**Decision:** Refactor `app/page.tsx` into a server component that handles auth, entitlement, and subscription lookups on the server, then passes data as props to client components. This matches the dashboard's architecture.
+**Changes:**
+- Rewrote `app/page.tsx` as a server component:
+  - Auth check via server Supabase client
+  - Calls `getEntitlementDetails()` and `getUserSubscription()` server-side
+  - Renders `LandingPage` (logged out), `CalculatorPaywall` (no access), or `CalculatorContent` (has access)
+  - Passes `userId`, `userEmail`, and `accountMenuData` as props to client components
+  - Added `metadata` export for SEO (was impossible as a client component)
+- Created `app/calculator-content.tsx` (client component):
+  - Receives server-fetched auth/account data as props (no more client-side auth fetch)
+  - `AppAccountMenu` receives `initialData` prop — no API call needed, instant dropdown
+  - Contains all interactive calculator logic (unchanged)
+  - Inner `Suspense` wraps `useSearchParams` for show loading
+- Created `app/calculator-paywall.tsx` (client component):
+  - Paywall view extracted; receives pre-fetched account data as props
+- Removed client-side entitlement imports (`hasProAccessClient`) from calculator flow
+**Supabase impact:** None — same queries, just moved from client to server.
+**Tradeoffs:**
+- Calculator page is now server-rendered first (faster initial paint, no auth spinner)
+- Account dropdown loads instantly on calculator, same as dashboard
+- Two new files, but each has a single clear responsibility
+**Rollback:** `git checkout HEAD~1 -- app/page.tsx && rm app/calculator-content.tsx app/calculator-paywall.tsx`
+**Next:** The `/api/account` endpoint is now only used as a fallback (if `initialData` isn't provided). Consider removing it once all logged-in pages pass server data.
+---
+
+---
+### 2026-02-24 — Global footer in AppShell
+**Context:** The author bio footer (SectionFooter + AuthorCard) was hardcoded only on the calculator page. It should appear on all logged-in pages.
+**Decision:** Move the footer into `AppShell` with a `showFooter` prop (default `true`) so every page wrapped in `AppShell` gets it automatically.
+**Changes:**
+- `components/ui/AppShell.tsx`: Added `showFooter` prop (default `true`), imported `SectionFooter` and `AuthorCard`, rendered them in place of the old empty `<footer>` element
+- `app/calculator-content.tsx`: Removed `SectionFooter`/`AuthorCard` block and their imports
+- `components/ui/AppShell.css`: Removed unused `.ds-app-footer` rule (footer now uses `SectionFooter`'s own styles)
+**Supabase impact:** None.
+**Tradeoffs:**
+- Footer content is now centralized — one place to edit, shows on dashboard + calculator + any future logged-in pages
+- Any page can opt out with `showFooter={false}`
+**Rollback:** Revert `components/ui/AppShell.tsx`, `components/ui/AppShell.css`, and `app/calculator-content.tsx`.
+---
+
+---
+### 2026-02-24 — Theme toggle in account dropdown
+**Context:** User requested moving the dark/light mode toggle from the global page footer into the account dropdown.
+**Decision:** Render ThemeToggle inside AppAccountMenu; remove it from root layout.
+**Changes:**
+- `components/ui/AppAccountMenu.tsx`: Import ThemeToggle, add a "Theme" block (label + ThemeToggle) in both loading and loaded states, above the actions (Manage Billing / Sign Out)
+- `app/dashboard/dashboard.css`: Added `.dashboard-account-menu-theme` and `.dashboard-account-menu-theme-label` for spacing and label styling
+- `app/layout.tsx`: Removed ThemeToggle import and the `<footer className="theme-toggle-footer">` block
+- `app/globals.css`: Removed unused `.theme-toggle-footer` rule
+**Supabase impact:** None.
+**Tradeoffs:** Theme toggle is now only available on logged-in pages (inside account dropdown). Logged-out pages (landing, login, pricing) no longer show a theme control.
+**Rollback:** Restore footer + ThemeToggle in layout; remove ThemeToggle from AppAccountMenu and revert dashboard.css/globals.css.
+---
+
+---
+### 2026-02-24 — Theme label spacing + ThemeToggle in dsys
+**Context:** "Theme" label was running into the toggle in the account dropdown; user also asked to componentize the toggle in the design system.
+**Decision:** (1) Increase gap between label and toggle in account menu. (2) Move ThemeToggle into components/ui as a proper dsys component.
+**Changes:**
+- `app/dashboard/dashboard.css`: `.dashboard-account-menu-theme` gap 0.5rem → 0.75rem; label `display: block` for clarity
+- `components/ui/ThemeToggle.tsx` + `ThemeToggle.css`: New dsys component (same behavior, classes `ds-theme-toggle` / `ds-theme-toggle-btn`)
+- `app/globals.css`: Removed `.theme-toggle` and `.theme-toggle-btn` (moved to ThemeToggle.css)
+- `components/ui/index.ts`: Export ThemeToggle and ThemeMode
+- `components/ui/AppAccountMenu.tsx`: Import ThemeToggle from `./ThemeToggle` (dsys)
+- Deleted `app/components/ThemeToggle.tsx`
+- `app/design-system/page.tsx`: Added ThemeToggle section to preview
+**Supabase impact:** None.
+**Rollback:** Revert above files; restore app/components/ThemeToggle.tsx and globals theme styles.
+---

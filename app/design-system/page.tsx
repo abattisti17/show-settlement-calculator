@@ -11,6 +11,7 @@ import { Popover } from "@/components/ui/Popover";
 import { SectionFooter } from "@/components/ui/SectionFooter";
 import { AuthorCard } from "@/components/ui/AuthorCard";
 import { Icon } from "@/components/ui/Icon";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -337,6 +338,16 @@ export default function DesignSystemPage() {
         </Row>
         <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: "0.5rem" }}>
           Renders via Portal to document.body with position:fixed. Use for floating menus, dropdowns.
+        </p>
+      </Section>
+
+      {/* ThemeToggle */}
+      <Section title="ThemeToggle">
+        <Row label="System / Light / Dark (persists in localStorage)">
+          <ThemeToggle />
+        </Row>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: "0.5rem" }}>
+          Used in account dropdown. Respects prefers-color-scheme when &quot;System&quot; is selected.
         </p>
       </Section>
 

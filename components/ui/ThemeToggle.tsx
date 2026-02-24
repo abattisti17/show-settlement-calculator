@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import "./ThemeToggle.css";
 
-type ThemeMode = "system" | "light" | "dark";
+export type ThemeMode = "system" | "light" | "dark";
 
 const STORAGE_KEY = "theme";
 
@@ -18,7 +19,11 @@ function applyTheme(mode: ThemeMode) {
   document.documentElement.dataset.theme = theme;
 }
 
-export default function ThemeToggle() {
+/**
+ * Design system theme toggle: System / Light / Dark.
+ * Persists choice in localStorage and respects prefers-color-scheme when "system" is selected.
+ */
+export function ThemeToggle() {
   const [mode, setMode] = useState<ThemeMode>("system");
 
   useEffect(() => {
@@ -52,10 +57,10 @@ export default function ThemeToggle() {
   }
 
   return (
-    <div className="theme-toggle" role="group" aria-label="Theme">
+    <div className="ds-theme-toggle" role="group" aria-label="Theme">
       <button
         type="button"
-        className={`theme-toggle-btn ${mode === "system" ? "active" : ""}`}
+        className={`ds-theme-toggle-btn ${mode === "system" ? "active" : ""}`}
         onClick={() => setAndPersist("system")}
         aria-pressed={mode === "system"}
       >
@@ -63,7 +68,7 @@ export default function ThemeToggle() {
       </button>
       <button
         type="button"
-        className={`theme-toggle-btn ${mode === "light" ? "active" : ""}`}
+        className={`ds-theme-toggle-btn ${mode === "light" ? "active" : ""}`}
         onClick={() => setAndPersist("light")}
         aria-pressed={mode === "light"}
       >
@@ -71,7 +76,7 @@ export default function ThemeToggle() {
       </button>
       <button
         type="button"
-        className={`theme-toggle-btn ${mode === "dark" ? "active" : ""}`}
+        className={`ds-theme-toggle-btn ${mode === "dark" ? "active" : ""}`}
         onClick={() => setAndPersist("dark")}
         aria-pressed={mode === "dark"}
       >
