@@ -739,3 +739,14 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 **Supabase impact:** None.
 **Rollback:** Revert above files; restore app/components/ThemeToggle.tsx and globals theme styles.
 ---
+
+---
+### 2026-02-24 — Pricing page design system migration
+**Context:** Migrate pricing page to use dsys components (MarketingShell/AppShell, Card, Button, Badge) per task #5.
+**Decision:** Server-side auth; wrap in MarketingShell when logged out, AppShell when logged in. Replace tier cards with Card, CTAs with Button, "Most Popular" with Badge, addon blocks with Card. Document swaps and dead CSS in pricing.css.
+**Changes:**
+- `app/pricing/page.tsx`: Made async; added createClient().auth.getUser(), getEntitlementDetails, getUserSubscription; wrap content in MarketingShell (logged out) or AppShell with AppAccountMenu (logged in). Replaced tier divs with Card, .pricing-badge with Badge (variant="accent") inside .pricing-card-badge-wrap, all CTAs with Button (variant="primary"|"ghost"|"secondary"), addon divs with Card (variant="bordered"). Back link → Button + Icon chevron left.
+- `app/pricing/pricing.css`: Added top comment block listing every component swap and dead/superseded CSS. Removed from .pricing-card: background, border, border-radius, padding. Removed .pricing-badge visual styles; added .pricing-card-badge-wrap for badge positioning. Reduced .pricing-cta to width: 100% only. Removed from .addon-item: background, border, border-radius, padding. Kept layout, typography, and .pricing-card-featured border override.
+**Supabase impact:** None. Pricing logic and Stripe integration unchanged.
+**Rollback:** Revert app/pricing/page.tsx and app/pricing/pricing.css.
+---

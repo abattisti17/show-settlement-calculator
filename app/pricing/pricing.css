@@ -1,3 +1,23 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRICING PAGE — Design system migration
+   ─────────────────────────────────────────────────────────────────────────────
+   Component swaps:
+   - Outer wrapper: <main> wrapped in <MarketingShell> (logged out) or <AppShell> (logged in).
+   - Auth: Server-side createClient().auth.getUser(); when logged in, getEntitlementDetails + getUserSubscription for AppAccountMenu.
+   - Back link: <Link className="pricing-back-btn"> → <Button as="a" href="/" variant="ghost" size="sm" className="pricing-back-btn"> + <Icon name="chevron" direction="left" />.
+   - Tier cards: <div className="pricing-card"> → <Card className="pricing-card" variant="default" padding="lg">.
+   - Featured tier: <div className="pricing-badge"> → <Badge variant="accent" className="pricing-badge"> inside <div className="pricing-card-badge-wrap">.
+   - CTAs: <Link className="pricing-cta btn-ghost"> → <Button as="a" href="..." variant="ghost" className="pricing-cta">; btn-primary → variant="primary"; Talk to sales → variant="secondary".
+   - Addon blocks: <div className="addon-item"> → <Card className="addon-item" variant="bordered" padding="md">.
+   - FAQ items: unchanged (no Card/Badge/Button swap).
+
+   Dead or superseded CSS (visuals now from dsys):
+   - .pricing-card: background, border, border-radius, padding (Card provides).
+   - .pricing-badge: background, color, font-size, font-weight, padding, border-radius (Badge provides); positioning moved to .pricing-card-badge-wrap.
+   - .pricing-cta: padding, font-size, font-family, border-radius, text-decoration, transition (Button provides); kept width: 100% for layout.
+   - .addon-item: background, border, border-radius, padding (Card provides).
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .pricing-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -9,52 +29,32 @@
 }
 
 .pricing-back-btn {
-  color: var(--color-text-muted);
-  text-decoration: none;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  transition: color 0.2s;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
 }
 
-.pricing-back-btn:hover {
-  color: var(--color-text-strong);
-}
-
-.pricing-header {
+.pricing-header.ds-page-header {
   text-align: center;
   margin-bottom: 3rem;
 }
 
-.pricing-header h1 {
-  font-size: clamp(2rem, 3vw, 2.75rem);
-  font-weight: 700;
-  color: var(--color-text-strong);
-  margin-bottom: 0.75rem;
-}
-
-.pricing-subtitle {
-  color: var(--color-text-muted);
-  font-size: var(--text-lg);
+.pricing-header .ds-page-header-row {
+  justify-content: center;
 }
 
 .pricing-tiers {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 320px));
   gap: 2rem;
   margin-bottom: 4rem;
+  justify-content: center;
 }
 
 .pricing-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  padding: 2rem;
+  position: relative;
   display: flex;
   flex-direction: column;
-  position: relative;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -64,23 +64,22 @@
 }
 
 .pricing-card-featured {
-  border-color: var(--color-accent);
-  border-width: 2px;
+  border-color: var(--color-accent) !important;
+  border-width: 2px !important;
 }
 
-.pricing-badge {
+.pricing-card-badge-wrap {
   position: absolute;
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--gradient-primary);
-  color: var(--color-text-strong);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
+  z-index: 1;
+}
+
+.pricing-card-badge-wrap .ds-badge.pricing-badge {
+  background: var(--gradient-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-accent-border) !important;
 }
 
 .pricing-card-header {
@@ -165,19 +164,6 @@
 
 .pricing-cta {
   width: 100%;
-  padding: 0.875rem 1.5rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  text-align: center;
-  transition: transform 0.15s, box-shadow 0.15s;
-  display: inline-block;
-}
-
-.pricing-cta:hover {
-  transform: translateY(-1px);
 }
 
 .pricing-addons {
@@ -200,10 +186,6 @@
 }
 
 .addon-item {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
   text-align: center;
 }
 
@@ -230,7 +212,7 @@
   margin-bottom: 3rem;
 }
 
-.pricing-faq h2 {
+.pricing-faq-title {
   text-align: center;
   font-size: var(--text-3xl);
   color: var(--color-text-strong);
@@ -254,6 +236,7 @@
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   line-height: 1.6;
+  margin: 0;
 }
 
 @media (max-width: 900px) {
@@ -262,16 +245,13 @@
     max-width: 500px;
     margin-left: auto;
     margin-right: auto;
+    justify-content: unset;
   }
 }
 
 @media (max-width: 520px) {
   .pricing-page {
     padding: 2.5rem 1.25rem 3rem;
-  }
-
-  .pricing-card {
-    padding: 1.5rem;
   }
 
   .faq-grid {
