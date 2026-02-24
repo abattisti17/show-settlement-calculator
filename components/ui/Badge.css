@@ -1,0 +1,40 @@
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border-radius: 999px;
+  line-height: var(--leading-normal);
+}
+
+.ds-badge-default {
+  background: var(--color-surface-strong);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.ds-badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success-strong);
+  border: 1px solid var(--color-success-border);
+}
+
+.ds-badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-strong);
+  border: 1px solid var(--color-warning-border);
+}
+
+.ds-badge-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+}
+
+.ds-badge-accent {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent-border);
+}

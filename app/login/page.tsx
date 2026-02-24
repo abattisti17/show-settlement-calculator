@@ -3,9 +3,13 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import JsonLd from "../components/JsonLd";
 import { toAbsoluteUrl } from "@/lib/seo";
+import { MarketingShell } from "@/components/ui/MarketingShell";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import "./login.css";
 
 type AuthMode = "signin" | "signup";
@@ -126,91 +130,58 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="auth-container">
+    <MarketingShell>
       <JsonLd data={breadcrumbSchema} />
-      <div className="auth-card">
-        <nav aria-label="Breadcrumb">
-          <Link href="/">Home</Link> / <span aria-current="page">Log In</span>
-        </nav>
-        {/* Header */}
-        <div className="auth-header">
-          <h1>Show Settlement Calculator</h1>
-          <p>Sign in to save and manage your settlements</p>
-        </div>
+      <div className="auth-container">
+        <Card variant="elevated" className="auth-card">
+          {/* Header */}
+          <div className="auth-header">
+            <h1>Show Settlement Calculator</h1>
+            <p>Sign in to save and manage your settlements</p>
+          </div>
 
-        {/* Mode Toggle (Sign In / Sign Up) */}
-        <div className="auth-mode-toggle">
-          <button
-            type="button"
-            className={authMode === "signin" ? "active" : ""}
-            onClick={() => {
-              setAuthMode("signin");
-              setError("");
-              setMessage("");
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            className={authMode === "signup" ? "active" : ""}
-            onClick={() => {
-              setAuthMode("signup");
-              setError("");
-              setMessage("");
-            }}
-          >
-            Sign Up
-          </button>
-        </div>
+          {/* Mode Toggle (Sign In / Sign Up) */}
+          <SegmentedControl
+            value={authMode}
+            onChange={(v) => { setAuthMode(v); setError(""); setMessage(""); }}
+            options={[
+              { value: "signin", label: "Sign In" },
+              { value: "signup", label: "Sign Up" },
+            ]}
+            className="auth-mode-toggle"
+          />
 
-        {/* Auth Method Toggle (Password / Magic Link) */}
-        <div className="auth-method-toggle">
-          <button
-            type="button"
-            className={authMethod === "password" ? "active" : ""}
-            onClick={() => {
-              setAuthMethod("password");
-              setError("");
-              setMessage("");
-            }}
-          >
-            Password
-          </button>
-          <button
-            type="button"
-            className={authMethod === "magic" ? "active" : ""}
-            onClick={() => {
-              setAuthMethod("magic");
-              setError("");
-              setMessage("");
-            }}
-          >
-            Magic Link
-          </button>
-        </div>
+          {/* Auth Method Toggle (Password / Magic Link) */}
+          <SegmentedControl
+            value={authMethod}
+            onChange={(v) => { setAuthMethod(v); setError(""); setMessage(""); }}
+            options={[
+              { value: "password", label: "Password" },
+              { value: "magic",    label: "Magic Link" },
+            ]}
+            className="auth-method-toggle"
+          />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            <Input
               type="email"
               id="email"
+              label="Email"
+              className="form-group"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
               disabled={loading}
             />
-          </div>
 
-          {authMethod === "password" && (
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
+            {authMethod === "password" && (
+              <Input
                 type="password"
                 id="password"
+                label="Password"
+                className="form-group"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -218,42 +189,41 @@ export default function LoginPage() {
                 disabled={loading}
                 minLength={6}
               />
-            </div>
-          )}
-
-          {/* Error Message */}
-          {error && <div className="error-message">{error}</div>}
-
-          {/* Success Message */}
-          {message && <div className="success-message">{message}</div>}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="auth-submit-btn"
-            disabled={loading}
-          >
-            {loading ? (
-              "Loading..."
-            ) : authMethod === "magic" ? (
-              "Send Magic Link"
-            ) : authMode === "signup" ? (
-              "Sign Up"
-            ) : (
-              "Sign In"
             )}
-          </button>
-        </form>
 
-        {/* Helper text */}
-        <p className="auth-helper-text">
-          {authMethod === "magic"
-            ? "We'll send you a link to sign in without a password"
-            : authMode === "signup"
-            ? "By signing up, you agree to use this tool responsibly"
-            : "Don't have an account? Switch to Sign Up above"}
-        </p>
+            {/* Error Message */}
+            {error && <div className="error-message">{error}</div>}
+
+            {/* Success Message */}
+            {message && <div className="success-message">{message}</div>}
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              variant="primary"
+              loading={loading}
+              className="auth-submit-btn"
+            >
+              {loading
+                ? "Loading..."
+                : authMethod === "magic"
+                ? "Send Magic Link"
+                : authMode === "signup"
+                ? "Sign Up"
+                : "Sign In"}
+            </Button>
+          </form>
+
+          {/* Helper text */}
+          <p className="auth-helper-text">
+            {authMethod === "magic"
+              ? "We'll send you a link to sign in without a password"
+              : authMode === "signup"
+              ? "By signing up, you agree to use this tool responsibly"
+              : "Don't have an account? Switch to Sign Up above"}
+          </p>
+        </Card>
       </div>
-    </main>
+    </MarketingShell>
   );
 }

@@ -3,6 +3,31 @@
 ---
 
 ---
+### 2026-02-24 — Landing page migrated to design system components
+**Context:** Needed to migrate the logged-out landing page to the new `components/ui` design system while preserving layout/content/behavior.
+**Decision:** Keep existing section structure and copy, but swap nav/footer shell, CTA buttons, and card-like wrappers to `MarketingShell`, `Button`, and `Card`.
+**Changes:**
+- Updated `app/page.tsx` (`LandingPage`):
+  - Wrapped landing content in `MarketingShell` (removes legacy landing nav/footer markup).
+  - Replaced CTA/link-button elements with `Button` variants:
+    - Primary CTAs -> `variant="primary"` (`/login`, `/pricing`)
+    - Example packet CTA -> `variant="secondary"` with `target="_blank"` + `rel`.
+  - Replaced card-like containers with `Card`:
+    - Hero container, feature cards, panel sections, pricing panel, final CTA panel.
+  - Kept landing content, section order, and copy unchanged.
+- Updated `components/ui/Button.tsx`:
+  - Converted props to a typed union for button vs anchor rendering.
+  - Allowed anchor attributes (`target`, `rel`, etc.) when `as="a"` to preserve existing CTA behavior.
+  - Added disabled/loading click guard for anchor mode.
+**Supabase impact:** None.
+**Tradeoffs:**
+- `landing.css` still contains legacy navigation class rules that are now unused.
+- `Card` base styles are now shared via design-system component rather than bespoke wrappers.
+**Rollback:** Revert `app/page.tsx`, `components/ui/Button.tsx`, and this log entry.
+**Next:** Remove dead landing-nav CSS rules after confirming no pages depend on them.
+---
+
+---
 ### 2026-02-24 — SEO phase 3.1 metadata + crawler access fixes
 **Context:** Validation showed crawler endpoints were still behind auth redirects in production and route metadata from `head.tsx` was not reliably reflected as intended.
 **Decision:** Move SEO metadata to Next.js metadata API (`metadata`/`generateMetadata`), harden public-route bypass in proxy auth logic, and extend robots disallow rules for private app paths.

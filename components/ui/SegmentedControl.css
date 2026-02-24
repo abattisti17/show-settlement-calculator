@@ -1,0 +1,33 @@
+.ds-seg {
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.375rem;
+  background: var(--color-surface-strong);
+  border-radius: var(--radius-lg);
+}
+
+.ds-seg-option {
+  flex: 1;
+  padding: 0.625rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.ds-seg-option:not(.active):hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.ds-seg .ds-seg-option.active {
+  background: var(--gradient-primary);
+  color: #fff;
+  box-shadow: 0 4px 12px var(--color-accent-border);
+}

@@ -1,0 +1,125 @@
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s, background 0.2s, color 0.2s;
+}
+
+/* Sizes */
+.ds-btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+}
+
+.ds-btn-md {
+  padding: 0.625rem 1.25rem;
+  font-size: var(--text-base);
+}
+
+.ds-btn-lg {
+  padding: 0.875rem 1.5rem;
+  font-size: var(--text-base);
+}
+
+/* Primary */
+.ds-btn-primary {
+  background: var(--gradient-primary);
+  color: #fff;
+}
+
+.ds-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary-sm);
+}
+
+.ds-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary */
+.ds-btn-secondary {
+  background: var(--color-surface-strong);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+}
+
+.ds-btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-strong);
+  color: var(--color-text-strong);
+  transform: translateY(-1px);
+}
+
+.ds-btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Ghost */
+.ds-btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+}
+
+.ds-btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-strong);
+  color: var(--color-text-strong);
+  transform: translateY(-1px);
+}
+
+.ds-btn-ghost:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Danger */
+.ds-btn-danger {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+}
+
+.ds-btn-danger:hover:not(:disabled) {
+  background: var(--color-error);
+  color: var(--color-text-strong);
+  transform: translateY(-1px);
+}
+
+.ds-btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Focus */
+.ds-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Disabled */
+.ds-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Loading spinner */
+.ds-btn-spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ds-spin 0.6s linear infinite;
+}
+
+@keyframes ds-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

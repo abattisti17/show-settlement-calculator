@@ -1,0 +1,33 @@
+.ds-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+}
+
+/* Variants */
+.ds-card-elevated {
+  box-shadow: var(--shadow-card);
+}
+
+.ds-card-bordered {
+  border-width: 2px;
+}
+
+/* Padding */
+.ds-card-pad-sm {
+  padding: 1rem;
+}
+
+.ds-card-pad-md {
+  padding: 1.5rem;
+}
+
+.ds-card-pad-lg {
+  padding: 2rem;
+}
+
+@media (max-width: 500px) {
+  .ds-card-pad-lg {
+    padding: 1.5rem;
+  }
+}
