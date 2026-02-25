@@ -873,3 +873,18 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - totalExpenses is still saved in inputs for any external consumers reading the JSONB directly.
 **Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx`
 ---
+
+---
+### 2026-02-25 — Phase 2: Multiple ticket tiers
+**Context:** Single ticketPrice × ticketsSold was inaccurate for any show with more than one price point (GA, VIP, etc.).
+**Decision:** Replace single ticket fields with repeatable ticket tier rows (name, price, sold, comps) + optional venue capacity. Same compose-from-existing-components pattern as Phase 1.
+**Changes:**
+- `app/calculator-content.tsx`: Added TicketTier type, replaced ticketPrice/ticketsSold in FormData with ticketTiers array + capacity field. Added addTicketTier/removeTicketTier/updateTicketTier functions. Updated handleCalculate to sum revenue across tiers. Updated form UI with repeatable tier rows. Updated results to show per-tier breakdown with subtotal. Updated save/load with backward compat (old shows load as single "General Admission" tier).
+- `app/calculator.css`: Added .calculator-tier-list, .calculator-tier-row (5-col grid: 2fr name, 1fr price, 1fr sold, 1fr comps, auto remove), .tier-subtotal styles. Mobile breakpoint at 600px collapses to 2-col with name spanning full width.
+- `app/s/[token]/page.tsx`: Updated Show interface for ticketTiers/capacity in inputs and results. Show Details renders per-tier info when multiple tiers exist. Breakdown shows per-tier revenue rows with sold×price labels and a gross revenue subtotal.
+**Supabase impact:** None (inputs/results JSONB now includes ticketTiers array alongside existing ticketPrice/ticketsSold for backward compat).
+**Tradeoffs:**
+- Old shows without ticketTiers load as single "General Admission" tier — no data loss.
+- ticketPrice and ticketsSold still saved for legacy readers.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx`
+---

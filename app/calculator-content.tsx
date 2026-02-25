@@ -17,6 +17,14 @@ import "./calculator.css";
 
 type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage";
 
+interface TicketTier {
+  id: string;
+  name: string;
+  price: string;
+  sold: string;
+  comps: string;
+}
+
 interface ExpenseItem {
   id: string;
   label: string;
@@ -40,8 +48,8 @@ const COMMON_EXPENSES = [
 interface FormData {
   showName: string;
   artistName: string;
-  ticketPrice: string;
-  ticketsSold: string;
+  ticketTiers: TicketTier[];
+  capacity: string;
   taxRate: string;
   expenseItems: ExpenseItem[];
   dealType: DealType;
@@ -51,6 +59,9 @@ interface FormData {
 
 interface CalculationResult {
   grossRevenue: number;
+  ticketTiers?: { name: string; price: number; sold: number; comps: number; revenue: number }[];
+  totalTicketsSold?: number;
+  totalComps?: number;
   taxAmount: number;
   totalExpenses: number;
   expenseItems?: { label: string; amount: number }[];
@@ -83,13 +94,14 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const tierIdCounter = useRef(2);
   const expenseIdCounter = useRef(2);
 
   const [formData, setFormData] = useState<FormData>({
     showName: "",
     artistName: "",
-    ticketPrice: "",
-    ticketsSold: "",
+    ticketTiers: [{ id: "1", name: "General Admission", price: "", sold: "", comps: "" }],
+    capacity: "",
     taxRate: "",
     expenseItems: [{ id: "1", label: "", amount: "" }],
     dealType: "guarantee",
@@ -128,6 +140,30 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
         }
 
         if (data) {
+          let loadedTiers: TicketTier[];
+          if (data.inputs.ticketTiers && data.inputs.ticketTiers.length > 0) {
+            loadedTiers = data.inputs.ticketTiers.map(
+              (t: { name: string; price: string; sold: string; comps?: string }, i: number) => ({
+                id: String(i + 1),
+                name: t.name || "",
+                price: t.price || "",
+                sold: t.sold || "",
+                comps: t.comps || "",
+              })
+            );
+          } else if (data.inputs.ticketPrice || data.inputs.ticketsSold) {
+            loadedTiers = [{
+              id: "1",
+              name: "General Admission",
+              price: data.inputs.ticketPrice || "",
+              sold: data.inputs.ticketsSold || "",
+              comps: "",
+            }];
+          } else {
+            loadedTiers = [{ id: "1", name: "General Admission", price: "", sold: "", comps: "" }];
+          }
+          tierIdCounter.current = loadedTiers.length + 1;
+
           let loadedExpenseItems: ExpenseItem[];
           if (data.inputs.expenseItems && data.inputs.expenseItems.length > 0) {
             loadedExpenseItems = data.inputs.expenseItems.map(
@@ -149,8 +185,8 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           setFormData({
             showName: data.title || '',
             artistName: data.inputs.artistName || '',
-            ticketPrice: data.inputs.ticketPrice || '',
-            ticketsSold: data.inputs.ticketsSold || '',
+            ticketTiers: loadedTiers,
+            capacity: data.inputs.capacity || '',
             taxRate: data.inputs.taxRate || '',
             expenseItems: loadedExpenseItems,
             dealType: data.inputs.dealType || 'guarantee',
@@ -173,6 +209,31 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errorMessage) setErrorMessage("");
+  }
+
+  function addTicketTier() {
+    const id = String(tierIdCounter.current++);
+    setFormData((prev) => ({
+      ...prev,
+      ticketTiers: [...prev.ticketTiers, { id, name: "", price: "", sold: "", comps: "" }],
+    }));
+  }
+
+  function removeTicketTier(id: string) {
+    setFormData((prev) => ({
+      ...prev,
+      ticketTiers: prev.ticketTiers.filter((tier) => tier.id !== id),
+    }));
+  }
+
+  function updateTicketTier(id: string, field: keyof Omit<TicketTier, "id">, value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      ticketTiers: prev.ticketTiers.map((tier) =>
+        tier.id === id ? { ...tier, [field]: value } : tier
+      ),
+    }));
     if (errorMessage) setErrorMessage("");
   }
 
@@ -202,11 +263,28 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   }
 
   function handleCalculate() {
-    const ticketPrice = parseNumber(formData.ticketPrice);
-    const ticketsSold = parseNumber(formData.ticketsSold);
     const taxRate = parseNumber(formData.taxRate);
     const guarantee = parseNumber(formData.guarantee);
     const percentage = parseNumber(formData.percentage);
+
+    const parsedTiers = formData.ticketTiers
+      .filter((t) => parseNumber(t.price) > 0 || parseNumber(t.sold) > 0)
+      .map((t) => {
+        const price = parseNumber(t.price);
+        const sold = parseNumber(t.sold);
+        const comps = parseNumber(t.comps);
+        return {
+          name: t.name.trim() || "General Admission",
+          price,
+          sold,
+          comps,
+          revenue: price * sold,
+        };
+      });
+
+    const totalTicketsSold = parsedTiers.reduce((sum, t) => sum + t.sold, 0);
+    const totalComps = parsedTiers.reduce((sum, t) => sum + t.comps, 0);
+    const grossRevenue = parsedTiers.reduce((sum, t) => sum + t.revenue, 0);
 
     const parsedExpenseItems = formData.expenseItems
       .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
@@ -216,8 +294,8 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       }));
     const totalExpenses = parsedExpenseItems.reduce((sum, item) => sum + item.amount, 0);
 
-    if (ticketPrice <= 0 || ticketsSold <= 0) {
-      setErrorMessage("Please enter valid ticket price and tickets sold.");
+    if (parsedTiers.length === 0 || grossRevenue <= 0) {
+      setErrorMessage("Please enter at least one ticket tier with a valid price and quantity sold.");
       setResult(null);
       return;
     }
@@ -243,7 +321,6 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       return;
     }
 
-    const grossRevenue = ticketPrice * ticketsSold;
     const taxAmount = grossRevenue * (taxRate / 100);
     const netProfit = grossRevenue - taxAmount - totalExpenses;
 
@@ -267,6 +344,9 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
 
     setResult({
       grossRevenue,
+      ticketTiers: parsedTiers,
+      totalTicketsSold,
+      totalComps,
       taxAmount,
       totalExpenses,
       expenseItems: parsedExpenseItems,
@@ -306,8 +386,10 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
         title: formData.showName.trim(),
         inputs: {
           artistName: formData.artistName,
-          ticketPrice: formData.ticketPrice,
-          ticketsSold: formData.ticketsSold,
+          ticketTiers: formData.ticketTiers.map(({ name, price, sold, comps }) => ({ name, price, sold, comps })),
+          capacity: formData.capacity,
+          ticketPrice: formData.ticketTiers[0]?.price || '',
+          ticketsSold: String(formData.ticketTiers.reduce((sum, t) => sum + parseNumber(t.sold), 0)),
           taxRate: formData.taxRate,
           expenseItems: formData.expenseItems.map(({ label, amount }) => ({ label, amount })),
           totalExpenses: String(
@@ -403,10 +485,70 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           <Input id="artistName" name="artistName" label="Artist / Band Name" value={formData.artistName} onChange={handleInputChange} placeholder="ex: The Rolling Stones" />
 
           <h3 className="calculator-section-title">Ticket Info</h3>
-          <div className="calculator-form-row">
-            <Input id="ticketPrice" name="ticketPrice" label="Ticket Price ($)" type="number" value={formData.ticketPrice} onChange={handleInputChange} placeholder="ex: 25" min={0} step={0.01} />
-            <Input id="ticketsSold" name="ticketsSold" label="Tickets Sold" type="number" value={formData.ticketsSold} onChange={handleInputChange} placeholder="ex: 200" min={0} step={1} />
+          <div className="calculator-tier-list">
+            {formData.ticketTiers.map((tier, index) => (
+              <div key={tier.id} className="calculator-tier-row">
+                <Input
+                  label={index === 0 ? "Tier Name" : undefined}
+                  value={tier.name}
+                  onChange={(e) => updateTicketTier(tier.id, "name", e.target.value)}
+                  placeholder="ex: General Admission"
+                />
+                <Input
+                  label={index === 0 ? "Price ($)" : undefined}
+                  type="number"
+                  value={tier.price}
+                  onChange={(e) => updateTicketTier(tier.id, "price", e.target.value)}
+                  placeholder="ex: 25"
+                  min={0}
+                  step={0.01}
+                />
+                <Input
+                  label={index === 0 ? "Sold" : undefined}
+                  type="number"
+                  value={tier.sold}
+                  onChange={(e) => updateTicketTier(tier.id, "sold", e.target.value)}
+                  placeholder="ex: 200"
+                  min={0}
+                  step={1}
+                />
+                <Input
+                  label={index === 0 ? "Comps" : undefined}
+                  type="number"
+                  value={tier.comps}
+                  onChange={(e) => updateTicketTier(tier.id, "comps", e.target.value)}
+                  placeholder="0"
+                  min={0}
+                  step={1}
+                />
+                {formData.ticketTiers.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeTicketTier(tier.id)}
+                    aria-label={`Remove ${tier.name || "tier"}`}
+                    className="calculator-tier-remove"
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button variant="ghost" size="sm" onClick={addTicketTier} type="button">
+              + Add Tier
+            </Button>
           </div>
+          <Input
+            id="capacity"
+            name="capacity"
+            label="Venue Capacity (optional)"
+            type="number"
+            value={formData.capacity}
+            onChange={handleInputChange}
+            placeholder="ex: 500"
+            min={0}
+            step={1}
+          />
 
           <h3 className="calculator-section-title">Tax & Expenses</h3>
           <Input id="taxRate" name="taxRate" label="Tax Rate (%)" type="number" value={formData.taxRate} onChange={handleInputChange} placeholder="ex: 10" min={0} max={100} step={0.1} />
@@ -485,10 +627,29 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
               {formData.artistName && (
                 <p className="artist-name-display">Settlement for: {formData.artistName}</p>
               )}
-              <div className="calculator-result-row result-row">
-                <span className="label">Gross Revenue</span>
-                <span className="value">{formatCurrency(result.grossRevenue)}</span>
-              </div>
+              {result.ticketTiers && result.ticketTiers.length > 1 ? (
+                <>
+                  {result.ticketTiers.map((tier, index) => (
+                    <div key={index} className="calculator-result-row result-row">
+                      <span className="label">{tier.name} ({tier.sold} × {formatCurrency(tier.price)})</span>
+                      <span className="value">{formatCurrency(tier.revenue)}</span>
+                    </div>
+                  ))}
+                  <div className="calculator-result-row result-row tier-subtotal">
+                    <span className="label">
+                      Gross Revenue ({result.totalTicketsSold} sold{result.totalComps ? `, ${result.totalComps} comps` : ''})
+                    </span>
+                    <span className="value">{formatCurrency(result.grossRevenue)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="calculator-result-row result-row">
+                  <span className="label">
+                    Gross Revenue{result.totalTicketsSold ? ` (${result.totalTicketsSold} sold${result.totalComps ? `, ${result.totalComps} comps` : ''})` : ''}
+                  </span>
+                  <span className="value">{formatCurrency(result.grossRevenue)}</span>
+                </div>
+              )}
               <div className="calculator-result-row result-row">
                 <span className="label">Tax</span>
                 <span className="value">−{formatCurrency(result.taxAmount)}</span>

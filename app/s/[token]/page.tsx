@@ -26,6 +26,8 @@ interface Show {
   show_date: string | null;
   inputs: {
     artistName?: string;
+    ticketTiers?: { name: string; price: string; sold: string; comps?: string }[];
+    capacity?: string;
     ticketPrice?: string;
     ticketsSold?: string;
     taxRate?: string;
@@ -37,6 +39,9 @@ interface Show {
   };
   results: {
     grossRevenue: number;
+    ticketTiers?: { name: string; price: number; sold: number; comps: number; revenue: number }[];
+    totalTicketsSold?: number;
+    totalComps?: number;
     taxAmount: number;
     totalExpenses: number;
     expenseItems?: { label: string; amount: number }[];
@@ -210,16 +215,40 @@ export default async function SharedSettlementPage({
         <section className="settlement-section">
           <h2 className="ds-section-title">Show Details</h2>
           <DescriptionList>
-            {typedShow.inputs.ticketPrice && (
-              <DescriptionList.Item
-                label="Ticket Price:"
-                value={formatCurrency(parseFloat(typedShow.inputs.ticketPrice))}
-              />
+            {typedShow.inputs.ticketTiers && typedShow.inputs.ticketTiers.length > 1 ? (
+              typedShow.inputs.ticketTiers.map((tier, index) => (
+                <DescriptionList.Item
+                  key={index}
+                  label={`${tier.name || "Tier"}:`}
+                  value={`${formatCurrency(parseFloat(tier.price))} × ${tier.sold} sold${parseInt(tier.comps || "0") > 0 ? `, ${tier.comps} comps` : ''}`}
+                />
+              ))
+            ) : (
+              <>
+                {(typedShow.inputs.ticketTiers?.[0]?.price || typedShow.inputs.ticketPrice) && (
+                  <DescriptionList.Item
+                    label="Ticket Price:"
+                    value={formatCurrency(parseFloat(typedShow.inputs.ticketTiers?.[0]?.price || typedShow.inputs.ticketPrice || "0"))}
+                  />
+                )}
+                {(typedShow.inputs.ticketTiers?.[0]?.sold || typedShow.inputs.ticketsSold) && (
+                  <DescriptionList.Item
+                    label="Tickets Sold:"
+                    value={typedShow.inputs.ticketTiers?.[0]?.sold || typedShow.inputs.ticketsSold}
+                  />
+                )}
+                {parseInt(typedShow.inputs.ticketTiers?.[0]?.comps || "0") > 0 && (
+                  <DescriptionList.Item
+                    label="Comps:"
+                    value={typedShow.inputs.ticketTiers![0].comps}
+                  />
+                )}
+              </>
             )}
-            {typedShow.inputs.ticketsSold && (
+            {typedShow.inputs.capacity && (
               <DescriptionList.Item
-                label="Tickets Sold:"
-                value={typedShow.inputs.ticketsSold}
+                label="Venue Capacity:"
+                value={typedShow.inputs.capacity}
               />
             )}
             {typedShow.inputs.taxRate && (
@@ -249,10 +278,26 @@ export default async function SharedSettlementPage({
         <section className="settlement-section">
           <h2 className="ds-section-title">Settlement Breakdown</h2>
           <BreakdownList>
-            <BreakdownList.Row
-              label="Gross Revenue"
-              value={formatCurrency(typedShow.results.grossRevenue)}
-            />
+            {typedShow.results.ticketTiers && typedShow.results.ticketTiers.length > 1 ? (
+              <>
+                {typedShow.results.ticketTiers.map((tier, index) => (
+                  <BreakdownList.Row
+                    key={index}
+                    label={`${tier.name} (${tier.sold} × ${formatCurrency(tier.price)})`}
+                    value={formatCurrency(tier.revenue)}
+                  />
+                ))}
+                <BreakdownList.Row
+                  label={`Gross Revenue (${typedShow.results.totalTicketsSold} sold${typedShow.results.totalComps ? `, ${typedShow.results.totalComps} comps` : ''})`}
+                  value={formatCurrency(typedShow.results.grossRevenue)}
+                />
+              </>
+            ) : (
+              <BreakdownList.Row
+                label={`Gross Revenue${typedShow.results.totalTicketsSold ? ` (${typedShow.results.totalTicketsSold} sold${typedShow.results.totalComps ? `, ${typedShow.results.totalComps} comps` : ''})` : ''}`}
+                value={formatCurrency(typedShow.results.grossRevenue)}
+              />
+            )}
             <BreakdownList.Row
               label="Tax"
               value={`−${formatCurrency(typedShow.results.taxAmount)}`}

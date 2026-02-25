@@ -203,6 +203,47 @@
   color: var(--color-success);
 }
 
+/* Ticket tiers */
+.calculator-tier-list {
+  margin-bottom: 1.25rem;
+}
+
+.calculator-tier-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.75rem;
+}
+
+.calculator-tier-row .ds-input-wrapper {
+  margin-bottom: 0;
+}
+
+.calculator-tier-remove {
+  margin-bottom: 0.125rem;
+}
+
+.calculator-result-row.tier-subtotal {
+  border-top: 1px dashed var(--color-border);
+  border-bottom: none;
+  padding-top: 0.5rem;
+}
+
+.calculator-result-row.tier-subtotal .label {
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .calculator-tier-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .calculator-tier-row > .ds-input-wrapper:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Expense items */
 .calculator-expense-list {
   margin-top: 0.5rem;
