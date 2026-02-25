@@ -33,6 +33,9 @@ export function MarketingShell({ children, className }: MarketingShellProps) {
             <Link href="/pricing" className="ds-mkt-nav-link">
               Pricing
             </Link>
+            <Link href="/media" className="ds-mkt-nav-link">
+              Media
+            </Link>
             <Link href="/login" className="ds-mkt-nav-link">
               Log in
             </Link>
@@ -60,6 +63,9 @@ export function MarketingShell({ children, className }: MarketingShellProps) {
           <Link href="/pricing" className="ds-mkt-nav-link" onClick={() => setMenuOpen(false)}>
             Pricing
           </Link>
+          <Link href="/media" className="ds-mkt-nav-link" onClick={() => setMenuOpen(false)}>
+            Media
+          </Link>
           <Link href="/login" className="ds-mkt-nav-link" onClick={() => setMenuOpen(false)}>
             Log in
           </Link>
@@ -75,10 +81,11 @@ export function MarketingShell({ children, className }: MarketingShellProps) {
         <div className="ds-mkt-footer-inner">
           <div className="ds-mkt-footer-links">
             <Link href="/pricing">Pricing</Link>
+            <Link href="/media">Media</Link>
             <Link href="/login">Log in</Link>
             <a href="mailto:abattisti@proton.me">Contact</a>
           </div>
-          <p className="ds-mkt-footer-copy">
+          <p className="ds-mkt-footer-copy" suppressHydrationWarning>
             &copy; {new Date().getFullYear()} GigSettle
           </p>
         </div>

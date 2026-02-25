@@ -15,6 +15,7 @@ export async function proxy(request: NextRequest) {
 
   const publicMarketingRoutes = new Set([
     '/',
+    '/media',
     '/pricing',
     '/login',
     '/design-system',

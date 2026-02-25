@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getEntitlementDetails } from "@/lib/access/entitlements";
 import { getUserSubscription } from "@/lib/stripe/subscription";
@@ -92,12 +93,6 @@ export default async function PricingPage() {
     <main className="pricing-page">
       <JsonLd data={faqSchema} />
       <JsonLd data={breadcrumbSchema} />
-      <div className="pricing-back-nav">
-        <Button as="a" href="/" variant="ghost" size="sm" className="pricing-back-btn">
-          <Icon name="chevron" size={14} direction="left" /> Back to home
-        </Button>
-      </div>
-
       <PageHeader
         title="Simple pricing that scales with your volume"
         description="Start pay-as-you-go. Upgrade when you need templates, controls, and team workflow."

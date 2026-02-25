@@ -1,6 +1,24 @@
 # Project History (append-only)
 
 ---
+### 2026-02-24 — /media as public route (no paywall)
+**Context:** Media page should be public, not behind auth/paywall.
+**Decision:** Add /media to proxy publicMarketingRoutes so unauthenticated users can access it.
+**Changes:** `proxy.ts`: added '/media' to publicMarketingRoutes Set.
+**Supabase impact:** None.
+**Rollback:** Remove '/media' from publicMarketingRoutes in proxy.ts.
+---
+### 2026-02-24 — New /media page (logged-out show hub)
+**Context:** User wanted a new logged-out page at /media for the show: articles, podcast episodes, livestream links, SEO-friendly, DSYS components only.
+**Decision:** Add app/media with MarketingShell, PageHeader, Card, Button, Badge, Icon; metadata + CollectionPage + BreadcrumbList JSON-LD; sitemap and nav/footer links.
+**Changes:**
+- Added `app/media/page.tsx`: metadata via buildPageMetadata, JsonLd (CollectionPage, BreadcrumbList), semantic sections (Articles, Podcast episodes, Livestreams), placeholder cards with DSYS components.
+- Added `app/media/media.css`: layout and card styling using design tokens.
+- Updated `components/ui/MarketingShell.tsx`: Media link in nav (desktop + mobile) and footer.
+- Updated `app/sitemap.ts`: added /media entry.
+**Supabase impact:** None.
+**Rollback:** Delete app/media/; revert MarketingShell.tsx and sitemap.ts.
+---
 ### 2026-02-24 — Dark theme token fix (border + surface-strong)
 **Context:** Dark theme had circular refs for --color-border and --color-surface-strong, so secondary buttons (e.g. Manage Billing) and borders had no distinct appearance.
 **Decision:** Define explicit values in default :root so the token layer is correct; light theme unchanged (it already overrides these).

@@ -1,0 +1,122 @@
+/* Media page — logged-out hub for articles, podcasts, livestreams. DSYS only. */
+
+.media-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 4rem;
+}
+
+.media-back-nav {
+  margin-bottom: 2rem;
+}
+
+.media-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.media-header.ds-page-header {
+  margin-bottom: 2.5rem;
+}
+
+.media-callout-wrap {
+  margin-bottom: 2.5rem;
+}
+
+.media-callout {
+  text-align: center;
+}
+
+.media-callout-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.media-callout-desc {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+  max-width: 36em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.media-callout-cta {
+  margin-top: 0.25rem;
+}
+
+.media-section {
+  margin-bottom: 3rem;
+}
+
+.media-section-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.media-card {
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+
+.media-card:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.media-card-meta {
+  margin-bottom: 0.75rem;
+}
+
+.media-type-badge {
+  font-size: var(--text-xs);
+}
+
+.media-card-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.media-card-title span {
+  display: block;
+}
+
+.media-card-desc {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+
+.media-card-cta {
+  align-self: flex-start;
+}
+
+@media (max-width: 520px) {
+  .media-page {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .media-grid {
+    grid-template-columns: 1fr;
+  }
+}
