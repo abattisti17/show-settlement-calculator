@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -17,13 +17,33 @@ import "./calculator.css";
 
 type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage";
 
+interface ExpenseItem {
+  id: string;
+  label: string;
+  amount: string;
+}
+
+const COMMON_EXPENSES = [
+  "Sound",
+  "Lights",
+  "Security",
+  "Catering / Hospitality",
+  "Backline Rental",
+  "Stagehands",
+  "Insurance",
+  "Marketing / Advertising",
+  "ASCAP / BMI / SESAC",
+  "Ticket Printing",
+  "Runner / Transport",
+];
+
 interface FormData {
   showName: string;
   artistName: string;
   ticketPrice: string;
   ticketsSold: string;
   taxRate: string;
-  totalExpenses: string;
+  expenseItems: ExpenseItem[];
   dealType: DealType;
   guarantee: string;
   percentage: string;
@@ -33,6 +53,7 @@ interface CalculationResult {
   grossRevenue: number;
   taxAmount: number;
   totalExpenses: number;
+  expenseItems?: { label: string; amount: number }[];
   netProfit: number;
   artistPayout: number;
   venuePayout: number;
@@ -62,6 +83,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const expenseIdCounter = useRef(2);
 
   const [formData, setFormData] = useState<FormData>({
     showName: "",
@@ -69,7 +91,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     ticketPrice: "",
     ticketsSold: "",
     taxRate: "",
-    totalExpenses: "",
+    expenseItems: [{ id: "1", label: "", amount: "" }],
     dealType: "guarantee",
     guarantee: "",
     percentage: "",
@@ -106,13 +128,31 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
         }
 
         if (data) {
+          let loadedExpenseItems: ExpenseItem[];
+          if (data.inputs.expenseItems && data.inputs.expenseItems.length > 0) {
+            loadedExpenseItems = data.inputs.expenseItems.map(
+              (item: { label: string; amount: string }, i: number) => ({
+                id: String(i + 1),
+                label: item.label || "",
+                amount: item.amount || "",
+              })
+            );
+          } else if (data.inputs.totalExpenses) {
+            loadedExpenseItems = [
+              { id: "1", label: "Other Expenses", amount: data.inputs.totalExpenses },
+            ];
+          } else {
+            loadedExpenseItems = [{ id: "1", label: "", amount: "" }];
+          }
+          expenseIdCounter.current = loadedExpenseItems.length + 1;
+
           setFormData({
             showName: data.title || '',
             artistName: data.inputs.artistName || '',
             ticketPrice: data.inputs.ticketPrice || '',
             ticketsSold: data.inputs.ticketsSold || '',
             taxRate: data.inputs.taxRate || '',
-            totalExpenses: data.inputs.totalExpenses || '',
+            expenseItems: loadedExpenseItems,
             dealType: data.inputs.dealType || 'guarantee',
             guarantee: data.inputs.guarantee || '',
             percentage: data.inputs.percentage || '',
@@ -136,13 +176,45 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     if (errorMessage) setErrorMessage("");
   }
 
+  function addExpenseItem() {
+    const id = String(expenseIdCounter.current++);
+    setFormData((prev) => ({
+      ...prev,
+      expenseItems: [...prev.expenseItems, { id, label: "", amount: "" }],
+    }));
+  }
+
+  function removeExpenseItem(id: string) {
+    setFormData((prev) => ({
+      ...prev,
+      expenseItems: prev.expenseItems.filter((item) => item.id !== id),
+    }));
+  }
+
+  function updateExpenseItem(id: string, field: "label" | "amount", value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      expenseItems: prev.expenseItems.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      ),
+    }));
+    if (errorMessage) setErrorMessage("");
+  }
+
   function handleCalculate() {
     const ticketPrice = parseNumber(formData.ticketPrice);
     const ticketsSold = parseNumber(formData.ticketsSold);
     const taxRate = parseNumber(formData.taxRate);
-    const totalExpenses = parseNumber(formData.totalExpenses);
     const guarantee = parseNumber(formData.guarantee);
     const percentage = parseNumber(formData.percentage);
+
+    const parsedExpenseItems = formData.expenseItems
+      .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
+      .map((item) => ({
+        label: item.label.trim() || "Unlabeled Expense",
+        amount: parseNumber(item.amount),
+      }));
+    const totalExpenses = parsedExpenseItems.reduce((sum, item) => sum + item.amount, 0);
 
     if (ticketPrice <= 0 || ticketsSold <= 0) {
       setErrorMessage("Please enter valid ticket price and tickets sold.");
@@ -197,6 +269,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       grossRevenue,
       taxAmount,
       totalExpenses,
+      expenseItems: parsedExpenseItems,
       netProfit,
       artistPayout,
       venuePayout,
@@ -236,7 +309,10 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           ticketPrice: formData.ticketPrice,
           ticketsSold: formData.ticketsSold,
           taxRate: formData.taxRate,
-          totalExpenses: formData.totalExpenses,
+          expenseItems: formData.expenseItems.map(({ label, amount }) => ({ label, amount })),
+          totalExpenses: String(
+            formData.expenseItems.reduce((sum, item) => sum + parseNumber(item.amount), 0)
+          ),
           dealType: formData.dealType,
           guarantee: formData.guarantee,
           percentage: formData.percentage,
@@ -333,9 +409,48 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           </div>
 
           <h3 className="calculator-section-title">Tax & Expenses</h3>
-          <div className="calculator-form-row">
-            <Input id="taxRate" name="taxRate" label="Tax Rate (%)" type="number" value={formData.taxRate} onChange={handleInputChange} placeholder="ex: 10" min={0} max={100} step={0.1} />
-            <Input id="totalExpenses" name="totalExpenses" label="Total Expenses ($)" type="number" value={formData.totalExpenses} onChange={handleInputChange} placeholder="ex: 500" min={0} step={0.01} />
+          <Input id="taxRate" name="taxRate" label="Tax Rate (%)" type="number" value={formData.taxRate} onChange={handleInputChange} placeholder="ex: 10" min={0} max={100} step={0.1} />
+
+          <div className="calculator-expense-list">
+            {formData.expenseItems.map((item, index) => (
+              <div key={item.id} className="calculator-expense-row">
+                <Input
+                  label={index === 0 ? "Expense" : undefined}
+                  value={item.label}
+                  onChange={(e) => updateExpenseItem(item.id, "label", e.target.value)}
+                  placeholder="ex: Sound"
+                  list="common-expenses"
+                />
+                <Input
+                  label={index === 0 ? "Amount ($)" : undefined}
+                  type="number"
+                  value={item.amount}
+                  onChange={(e) => updateExpenseItem(item.id, "amount", e.target.value)}
+                  placeholder="ex: 500"
+                  min={0}
+                  step={0.01}
+                />
+                {formData.expenseItems.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeExpenseItem(item.id)}
+                    aria-label={`Remove ${item.label || "expense"}`}
+                    className="calculator-expense-remove"
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+            ))}
+            <datalist id="common-expenses">
+              {COMMON_EXPENSES.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+            <Button variant="ghost" size="sm" onClick={addExpenseItem} type="button">
+              + Add Expense
+            </Button>
           </div>
 
           <h3 className="calculator-section-title">Deal Structure</h3>
@@ -378,10 +493,27 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 <span className="label">Tax</span>
                 <span className="value">−{formatCurrency(result.taxAmount)}</span>
               </div>
-              <div className="calculator-result-row result-row">
-                <span className="label">Expenses</span>
-                <span className="value">−{formatCurrency(result.totalExpenses)}</span>
-              </div>
+              {result.expenseItems && result.expenseItems.length > 0 ? (
+                <>
+                  {result.expenseItems.map((item, index) => (
+                    <div key={index} className="calculator-result-row result-row">
+                      <span className="label">{item.label}</span>
+                      <span className="value">−{formatCurrency(item.amount)}</span>
+                    </div>
+                  ))}
+                  {result.expenseItems.length > 1 && (
+                    <div className="calculator-result-row result-row expense-subtotal">
+                      <span className="label">Total Expenses</span>
+                      <span className="value">−{formatCurrency(result.totalExpenses)}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="calculator-result-row result-row">
+                  <span className="label">Expenses</span>
+                  <span className="value">−{formatCurrency(result.totalExpenses)}</span>
+                </div>
+              )}
               <div className="calculator-result-row result-row highlight">
                 <span className="label">Net</span>
                 <span className="value">{formatCurrency(result.netProfit)}</span>

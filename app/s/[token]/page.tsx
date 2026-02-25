@@ -30,6 +30,7 @@ interface Show {
     ticketsSold?: string;
     taxRate?: string;
     totalExpenses?: string;
+    expenseItems?: { label: string; amount: string }[];
     dealType?: string;
     guarantee?: string;
     percentage?: string;
@@ -38,6 +39,7 @@ interface Show {
     grossRevenue: number;
     taxAmount: number;
     totalExpenses: number;
+    expenseItems?: { label: string; amount: number }[];
     netProfit: number;
     artistPayout: number;
     venuePayout: number;
@@ -226,12 +228,20 @@ export default async function SharedSettlementPage({
                 value={`${typedShow.inputs.taxRate}%`}
               />
             )}
-            {typedShow.inputs.totalExpenses && (
+            {typedShow.inputs.expenseItems && typedShow.inputs.expenseItems.length > 0 ? (
+              typedShow.inputs.expenseItems.map((item, index) => (
+                <DescriptionList.Item
+                  key={index}
+                  label={`${item.label || "Expense"}:`}
+                  value={formatCurrency(parseFloat(item.amount))}
+                />
+              ))
+            ) : typedShow.inputs.totalExpenses ? (
               <DescriptionList.Item
                 label="Total Expenses:"
                 value={formatCurrency(parseFloat(typedShow.inputs.totalExpenses))}
               />
-            )}
+            ) : null}
           </DescriptionList>
         </section>
 
@@ -248,11 +258,31 @@ export default async function SharedSettlementPage({
               value={`−${formatCurrency(typedShow.results.taxAmount)}`}
               variant="negative"
             />
-            <BreakdownList.Row
-              label="Expenses"
-              value={`−${formatCurrency(typedShow.results.totalExpenses)}`}
-              variant="negative"
-            />
+            {typedShow.results.expenseItems && typedShow.results.expenseItems.length > 0 ? (
+              <>
+                {typedShow.results.expenseItems.map((item, index) => (
+                  <BreakdownList.Row
+                    key={index}
+                    label={item.label}
+                    value={`−${formatCurrency(item.amount)}`}
+                    variant="negative"
+                  />
+                ))}
+                {typedShow.results.expenseItems.length > 1 && (
+                  <BreakdownList.Row
+                    label="Total Expenses"
+                    value={`−${formatCurrency(typedShow.results.totalExpenses)}`}
+                    variant="negative"
+                  />
+                )}
+              </>
+            ) : (
+              <BreakdownList.Row
+                label="Expenses"
+                value={`−${formatCurrency(typedShow.results.totalExpenses)}`}
+                variant="negative"
+              />
+            )}
             <BreakdownList.Row
               label="Net Profit"
               value={formatCurrency(typedShow.results.netProfit)}

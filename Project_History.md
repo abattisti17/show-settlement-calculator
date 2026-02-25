@@ -844,3 +844,32 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - Some removed legacy selectors may no longer be available for ad-hoc experiments outside current TSX usage.
 **Rollback:** Revert this commit’s touched CSS files plus `app/design-system/page.tsx` and this Project_History entry.
 ---
+
+---
+### 2026-02-25 — Settlement flow audit & roadmap
+**Context:** Reviewed the entire settlement calculator from the perspective of a venue accountant / tour manager to identify gaps, dispute risks, and missing real-world scenarios.
+**Decision:** Captured findings in two new docs rather than code changes.
+**Changes:**
+- Added `docs/SETTLEMENT_AUDIT.md` — full audit of missing line items, edge cases, dispute-prone areas, reconciliation risks, and unsupported scenarios.
+- Added `docs/SETTLEMENT_ROADMAP.md` — 11-phase buildable roadmap (itemized expenses → multi-act support → notes/countersignature), plus a future-considerations backlog.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Roadmap phases are ordered by dispute-reduction impact, not feature flashiness.
+- Some later phases (multi-act, withholding) may need schema changes when we get there.
+**Rollback:** Delete `docs/SETTLEMENT_AUDIT.md` and `docs/SETTLEMENT_ROADMAP.md`, remove this entry.
+---
+
+---
+### 2026-02-25 — Phase 1: Itemized expenses
+**Context:** Single totalExpenses field was the #1 dispute source. Replaced with repeatable line-item expenses per the settlement roadmap.
+**Decision:** Add ExpenseItem type, repeatable UI rows (composed from existing Input + Button), itemized display in calculator summary and shared view.
+**Changes:**
+- `app/calculator-content.tsx`: Added ExpenseItem type, COMMON_EXPENSES datalist, expense add/remove/update functions, updated FormData, CalculationResult, handleCalculate, handleSaveShow, loadShow, form UI, and results UI.
+- `app/calculator.css`: Added .calculator-expense-list, .calculator-expense-row, .calculator-expense-remove, .expense-subtotal styles with mobile responsive grid.
+- `app/s/[token]/page.tsx`: Updated Show interface for expenseItems in inputs and results, updated Show Details and Settlement Breakdown sections to render itemized expenses.
+**Supabase impact:** None (inputs/results JSONB columns now include expenseItems array alongside existing totalExpenses for backward compat).
+**Tradeoffs:**
+- Old shows without expenseItems load as a single "Other Expenses" row — no data loss.
+- totalExpenses is still saved in inputs for any external consumers reading the JSONB directly.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx`
+---
