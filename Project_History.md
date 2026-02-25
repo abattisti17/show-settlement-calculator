@@ -1,5 +1,31 @@
 # Project History (append-only)
 
+### 2025-02-25 — Settlement audit roadmap implementation
+**Context:** Execute settlement audit roadmap (Phases 1–5): critical fixes, high-impact, quick wins, server-side recalculation, trust & export.
+**Decision:** Implement all items that do not require schema/migration/RLS changes.
+**Changes:**
+- Phase 1: Show date field (FormData, Input, save/load); overpayment warning in computeSettlement; SharePopover confirmation + disable when stale; ShareLinkManager resultsStale.
+- Phase 2: Balance due callout at top of summary; deal structure plain-language summary (getDealSummary); capacity/comps/negative expense validation.
+- Phase 3: calculatedAt in summary; acknowledgments + show date in CSV; deal type tooltips.
+- Phase 4: lib/settlement/calculate.ts (extract computeSettlement); app/api/shows/save/route.ts; calculator uses API instead of direct Supabase.
+- Phase 5: Print styles for balance-due, overpayment, page-break; optional expected gross reconciliation field.
+**Files:** app/calculator-content.tsx, app/components/SharePopover.tsx, app/components/ShareLinkManager.tsx, app/calculator.css, app/globals.css, lib/settlement/calculate.ts (new), app/api/shows/save/route.ts (new).
+**Supabase impact:** None (same shows table, same RLS).
+**Rollback:** Revert commits; delete lib/settlement/calculate.ts, app/api/shows/save/route.ts.
+---
+### 2025-02-25 — Parts 2–5: Settlement audit (compare, risk, roadmap, stress test)
+**Context:** Complete audit Parts 2–5: compare app to real-world workflow, risk/trust audit, design-system-only roadmap, stress test scenario.
+**Decision:** Document gaps, assumptions, missing validations, costly mistakes, reconciliation risks, UI friction; trust/transparency/audit/export needs; roadmap with critical fixes, high-impact, quick wins, structural, trust/export; stress test $10k guarantee vs 85/15.
+**Changes:** Added `docs/SETTLEMENT_AUDIT_PARTS_2-5.md`.
+**Supabase impact:** None.
+**Rollback:** Delete docs/SETTLEMENT_AUDIT_PARTS_2-5.md.
+---
+### 2025-02-25 — Part 1: Real-world settlement workflow audit
+**Context:** 5-part audit of the settlement app against real-world workflow. Part 1: map the actual end-to-end process from load-in through final payment.
+**Decision:** Create a document mapping roles, documents, calculations, disputes, time-sensitive steps, and late-night behavior.
+**Changes:** Added `docs/SETTLEMENT_REAL_WORLD_WORKFLOW.md` — roles (venue GM, promoter, tour manager, accountant, etc.), documents (deal memo, ticket report, receipts, settlement sheet), manual calculations, dispute zones, time-sensitive steps, fatigue/pressure behaviors.
+**Supabase impact:** None.
+**Rollback:** Delete docs/SETTLEMENT_REAL_WORLD_WORKFLOW.md.
 ---
 ### 2026-02-24 — /media as public route (no paywall)
 **Context:** Media page should be public, not behind auth/paywall.
@@ -1044,4 +1070,101 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - Per-expense notes only appear when the expense row has content (label or amount), keeping the form clean for empty rows.
 - No authentication for acknowledging — deliberate choice matching the roadmap's "link-based access" requirement.
 **Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx app/s/\[token\]/shared-settlement.css app/s/\[token\]/actions.ts app/s/\[token\]/AcknowledgeForm.tsx app/dashboard/page.tsx`
+---
+
+---
+### 2026-02-25 — Usability Hardening (Roadmap Part 4)
+**Context:** The usability audit identified high-risk settlement workflow issues for late-night, high-pressure usage (stale outputs, ambiguous labels, weak safeguards, and DS inconsistency).
+**Decision:** Prioritize risk reduction and clarity improvements first, while refactoring toward existing design-system components instead of introducing new visual styles.
+**Changes:**
+- `app/calculator-content.tsx`: Added unsaved-change safeguards (`beforeunload` + guarded dashboard navigation), confirmation prompts for destructive row removals (tiers, expenses, artists, buyouts), non-negative numeric sanitization, percentage caps, keyboard shortcut for calculation (`Ctrl/Cmd + Enter`), live pre-calc warnings for ticket/capacity mismatches, stronger stale-results warning placement, clearer settlement microcopy (tax/card-fee/buyout labels), visible deal-type helper text, and consistent top summary label (`Amount due tonight`). Save action now stays enabled whenever results exist (except while saving), and save button copy now reflects settlement terminology.
+- `app/components/SharePopover.tsx`: Removed duplicate icon-only quick-copy control and blocking confirm flow, keeping a single clear Share entry point via popover.
+- `app/components/ShareLinkManager.tsx`: Refactored raw controls to existing design-system `Button` and `Input` components, improved sharing copy, added stale-results warning in share panel, and standardized loading/disabled interaction states.
+- `app/calculator.css`: Added styles for prominent stale banner, sticky calculate action, deal helper text spacing, and replaced undefined token usage with existing DS tokens.
+- `app/s/[token]/shared-settlement.css`, `app/dashboard/DashboardToast.css`: Replaced undefined color-token usage with existing DS token equivalents.
+- `components/ui/Popover.css`: Added focus-visible affordance using `:focus-within` for better keyboard focus clarity on popover triggers.
+- `app/login/login.css`, `app/dashboard/dashboard.css`: Standardized primary hover lift to align with DS interaction feel.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Destructive-action confirmations currently use native confirm dialogs for speed and low implementation risk; custom in-app confirmations can replace these later.
+- Numeric sanitization now blocks negative entry at input-time; stricter field-by-field validation rules can be layered in future without schema changes.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/components/SharePopover.tsx app/components/ShareLinkManager.tsx app/calculator.css app/s/\[token\]/shared-settlement.css app/dashboard/DashboardToast.css components/ui/Popover.css app/login/login.css app/dashboard/dashboard.css Project_History.md`
+---
+
+---
+### 2026-02-25 — Roadmap Completion (No-DB Pass)
+**Context:** Complete the remaining roadmap items while keeping rollback simple and explicitly avoiding schema migrations, RLS edits, or other persistent infrastructure changes.
+**Decision:** Implement only app-layer and style-layer improvements that remain one-commit reversible, including draft-save behavior and share-before-save UX via existing APIs.
+**Changes:**
+- `app/api/shows/save/route.ts`: Added `allowDraft` support. Save now permits draft writes when calculation fails, while preserving existing finalized `results` on update by omitting `results` updates for draft saves.
+- `app/calculator-content.tsx`: Added draft-capable save flow (`Save Draft` fallback), return value from save handler (show id), and new `Save & Copy Share Link` action for unsaved-but-calculated settlements (share-before-save without DB changes). Migrated core settlement waterfall sections to `BreakdownList` for design-system alignment (gross/tax/expenses/net + venue + merch/total blocks). Updated save copy to settlement-focused language.
+- `app/dashboard/page.tsx` + `app/dashboard/dashboard.css`: Removed duplicate custom create-button styling usage in favor of `Button` size variants and simplified responsive button targeting.
+- `app/login/page.tsx` + `app/login/login.css`: Removed custom submit-button style dependency by using DS `Button` sizing/block behavior and replaced legacy `form-group` spacing with local layout spacing (`auth-form-fields`).
+- `app/globals.css`: Removed obsolete share-button/toggle/input style blocks and redundant global gradient button utility overrides that duplicated design-system button behavior.
+- `app/landing.css`: Replaced hero heading `clamp(...)` with DS typography tokens and aligned off-scale spacing values.
+- `app/calculator.css`: Added minor support class for post-migration `BreakdownList` spacing.
+**Supabase impact:** None (no schema migrations, no policy/RLS changes, no table alterations).
+**Tradeoffs:**
+- Draft saves intentionally do not generate share links by themselves; sharing still requires a calculable settlement path (now enabled through save-and-share once results are valid).
+- Calculator results migration is focused on the highest-signal summary waterfall first; per-artist block styling remains partially hybrid to minimize risk in one pass.
+**Rollback:** `git checkout HEAD -- app/api/shows/save/route.ts app/calculator-content.tsx app/calculator.css app/dashboard/page.tsx app/dashboard/dashboard.css app/login/page.tsx app/login/login.css app/globals.css app/landing.css Project_History.md`
+---
+
+---
+### 2026-02-25 — Prevent Number Input Scroll Changes
+**Context:** Numeric fields (e.g., venue capacity) changed values when users scrolled with focus still inside the input, creating accidental financial edits.
+**Decision:** Apply a shared input-level safeguard so number inputs stop wheel-driven value stepping by blurring on wheel interaction.
+**Changes:**
+- `components/ui/Input.tsx`: Added centralized `onWheel` handling to `Input`:
+  - Preserves custom caller `onWheel` behavior.
+  - For `type="number"`, blurs the focused input on wheel to prevent unintended increment/decrement.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Users can still adjust number values manually (typing/arrow keys); only wheel-based accidental changes are suppressed.
+**Rollback:** `git checkout HEAD -- components/ui/Input.tsx Project_History.md`
+---
+
+---
+### 2026-02-25 — Optional Roadmap Polish (DS Completion Pass)
+**Context:** Final optional roadmap items remained after the no-DB implementation pass: per-artist results consistency, native dialog removal, textarea component parity, and residual legacy CSS debt.
+**Decision:** Complete these as UI-layer refactors only, using existing DS primitives and no backend/schema changes.
+**Changes:**
+- `components/ui/Textarea.tsx` + `components/ui/Textarea.css` + `components/ui/index.ts`: Added a first-class DS `Textarea` with label/error/hint/size variants and exported it through the DS index.
+- `app/calculator-content.tsx`: Replaced native destructive `window.confirm()` flows with in-app DS confirmation banners for both row removals and unsaved-leave navigation. Migrated per-artist results rows (deal breakdown, payouts, deductions, balance due) to `BreakdownList` for consistency. Replaced the top "Amount due tonight" callout with `BreakdownList`. Swapped the general notes field to DS `Textarea`, and per-expense note input to DS `Input`.
+- `app/calculator.css`: Removed obsolete `calculator-result-row` style variants no longer used after `BreakdownList` migration; added DS-styled confirmation banner styles; updated note and textarea selectors to target DS wrappers/components.
+- `app/globals.css`: Removed dead legacy `.form-group` and `.result-row` style blocks (including related print-only variants) now unused by active markup.
+**Supabase impact:** None (no migrations, no policy/RLS changes, no schema updates).
+**Tradeoffs:**
+- In-app confirmation is a two-step inline banner rather than modal/undo queue, favoring lower implementation risk and clear rollback.
+- Print styling now relies on DS component print behavior rather than legacy `.result-row` selectors.
+**Rollback:** `git checkout HEAD -- components/ui/Textarea.tsx components/ui/Textarea.css components/ui/index.ts app/calculator-content.tsx app/calculator.css app/globals.css Project_History.md`
+---
+
+---
+### 2026-02-25 — Settlement Hardening Integrity Pass
+**Context:** Final cleanup/confirmation phase for money-sensitive settlement workflows required stronger server-side input hardening and accessibility consistency checks.
+**Decision:** Tighten numeric parsing/clamping in shared calculation logic and enforce robust IDs/labels in DS form primitives, while keeping changes local and rollback-safe.
+**Changes:**
+- `lib/settlement/calculate.ts`: Hardened numeric parsing to finite-only values; added server-side non-negative and percent clamping (`parseNonNegative`, `parsePercent`) with explicit warnings; applied clamping to tax/fee rates, ticket counts/comps, expenses, buyouts, artist guarantees/percentages/breakeven/deposit/withholding, and merch inputs.
+- `components/ui/Input.tsx`, `components/ui/Select.tsx`, `components/ui/Textarea.tsx`: Added `useId` fallback IDs when no explicit id/label-derived id is available, preventing undefined/duplicate `aria-describedby` targets in dynamic rows.
+- `components/ui/BreakdownList.tsx`: Added `role="list"` to the container to pair with row `role="listitem"` semantics.
+- `app/calculator-content.tsx`: Added explicit `aria-label` attributes for repeated dynamic ticket/expense/buyout/note inputs where visible labels are intentionally shown only on the first row.
+**Supabase impact:** None (no schema, RLS, or env changes).
+**Tradeoffs:**
+- Clamping/canonicalization may adjust malformed API payload values instead of preserving them verbatim, but this is intentional for financial safety.
+- Repo-wide lint still has pre-existing unrelated issues outside settlement scope.
+**Rollback:** `git checkout HEAD -- lib/settlement/calculate.ts components/ui/Input.tsx components/ui/Select.tsx components/ui/Textarea.tsx components/ui/BreakdownList.tsx app/calculator-content.tsx Project_History.md`
+---
+
+---
+### 2026-02-25 — Contextual Removal Confirmation Popovers
+**Context:** Inline confirmation banners for destructive row actions rendered near the top of the page, making them easy to miss when users remove artists/tiers/expenses lower in the form.
+**Decision:** Move destructive confirms to contextual, trigger-anchored DS popovers so confirmation appears adjacent to the clicked remove action.
+**Changes:**
+- `app/calculator-content.tsx`: Replaced global pending-removal banner flow with reusable `DestructiveConfirmPopover` (using existing `Popover` + `Button` components) for tier, expense, artist, and buyout remove actions.
+- `app/calculator.css`: Added local popover copy/action spacing styles and artist-remove alignment utility.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Confirmation UI is now per-control and requires one extra click in-context rather than relying on a global message area.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css Project_History.md`
 ---

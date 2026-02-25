@@ -212,36 +212,6 @@
 /* Shared Utilities */
 /* ============================================ */
 
-.share-link-btn-primary,
-.create-show-btn,
-.create-show-btn-large,
-.auth-submit-btn {
-  background: var(--gradient-primary);
-  color: var(--color-text-strong);
-  border: none;
-}
-
-.share-link-btn-primary:hover {
-  box-shadow: var(--shadow-primary-sm);
-}
-
-.create-show-btn:hover,
-.create-show-btn-large:hover,
-.auth-submit-btn:hover:not(:disabled) {
-  box-shadow: var(--shadow-primary-lg);
-}
-
-.share-link-toggle-btn {
-  background: transparent;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border-strong);
-}
-
-.share-link-toggle-btn:hover:not(:disabled) {
-  background: var(--color-surface-strong);
-  color: var(--color-text-strong);
-}
-
 .results-card,
 .paywall-card,
 .share-link-manager,
@@ -253,14 +223,6 @@
 .auth-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-}
-
-.form-group input,
-.form-group select,
-.share-link-input {
-  background: var(--color-surface-strong);
-  border: 1px solid var(--color-input-border);
-  color: var(--color-text-strong);
 }
 
 body {
@@ -276,54 +238,6 @@ body {
 /* Many classes below are dead for calculator; kept for print/other pages. */
 /* ============================================ */
 
-/* Form styles */
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text);
-  margin-bottom: 0.4rem;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: var(--text-base);
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
-}
-
-.form-group input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.form-group select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  padding-right: 2.5rem;
-}
-
-.form-group select option {
-  background: var(--color-bg-1);
-  color: var(--color-text-strong);
-}
-
 /* Results card */
 .results-card {
   border-radius: var(--radius-2xl);
@@ -338,68 +252,6 @@ body {
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--color-border);
-}
-
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.result-row:last-of-type {
-  border-bottom: none;
-}
-
-.result-row .label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-
-.result-row .value {
-  font-family: var(--font-geist-mono), monospace;
-  font-size: var(--text-base);
-  color: var(--color-text-strong);
-  font-weight: 500;
-}
-
-/* Highlight important rows */
-.result-row.highlight {
-  background: var(--color-accent-bg);
-  margin: 0.5rem -1rem;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  border-bottom: none;
-}
-
-.result-row.highlight .label {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
-.result-row.highlight .value {
-  color: var(--color-accent);
-  font-weight: 700;
-  font-size: var(--text-lg);
-}
-
-.result-row.artist-payout {
-  background: var(--color-success-bg);
-}
-
-.result-row.artist-payout .label,
-.result-row.artist-payout .value {
-  color: var(--color-success-strong);
-}
-
-.result-row.venue-payout {
-  background: var(--color-warning-bg);
-}
-
-.result-row.venue-payout .label,
-.result-row.venue-payout .value {
-  color: var(--color-warning-strong);
 }
 
 .paywall-card {
@@ -457,11 +309,13 @@ body {
 
   .calculator-form-section,
   .calculator-save-status,
+  .calculator-stale-banner,
   .calculator-container .ds-page-header {
     display: none;
   }
 
   .results-card {
+    page-break-inside: avoid;
     background: var(--color-print-panel-bg);
     border-color: var(--color-print-border);
     box-shadow: none;
@@ -470,41 +324,6 @@ body {
   .results-card h2 {
     color: var(--color-print-text);
     border-bottom-color: var(--color-print-border);
-  }
-
-  .result-row .label {
-    color: var(--color-print-label);
-  }
-
-  .result-row .value {
-    color: var(--color-print-text);
-  }
-
-  .result-row.highlight {
-    background: var(--color-print-highlight-bg);
-  }
-
-  .result-row.highlight .label,
-  .result-row.highlight .value {
-    color: var(--color-print-accent);
-  }
-
-  .result-row.artist-payout {
-    background: var(--color-print-success-bg);
-  }
-
-  .result-row.artist-payout .label,
-  .result-row.artist-payout .value {
-    color: var(--color-print-success-text);
-  }
-
-  .result-row.venue-payout {
-    background: var(--color-print-warning-bg);
-  }
-
-  .result-row.venue-payout .label,
-  .result-row.venue-payout .value {
-    color: var(--color-print-warning-text);
   }
 
   .calculator-print-btn {
@@ -568,31 +387,6 @@ body {
   line-height: 1.6;
 }
 
-.share-link-btn-primary {
-  padding: 0.875rem 1.5rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  align-self: flex-start;
-}
-
-.share-link-btn-primary:hover {
-  transform: translateY(-1px);
-}
-
-.share-link-btn-primary:active {
-  transform: translateY(0);
-}
-
-.share-link-btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .share-link-display-container {
   display: flex;
   flex-direction: column;
@@ -634,66 +428,9 @@ body {
   font-weight: 500;
 }
 
-.share-link-toggle-btn {
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-
-.share-link-toggle-btn:hover:not(:disabled) {
-}
-
-.share-link-toggle-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .share-link-display {
   display: flex;
   gap: 0.5rem;
-}
-
-.share-link-input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  font-size: var(--text-sm);
-  font-family: var(--font-geist-mono), monospace;
-  border-radius: var(--radius-sm);
-  color: var(--color-accent);
-  cursor: text;
-}
-
-.share-link-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
-}
-
-.share-link-copy-btn {
-  padding: 0.75rem 1rem;
-  font-family: inherit;
-  background: var(--color-accent-bg);
-  color: var(--color-accent);
-  border: 1px solid var(--color-accent-border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.share-link-copy-btn:hover {
-  background: var(--color-accent-bg-hover);
-  border-color: var(--color-accent-border-hover);
-}
-
-.share-link-copy-btn svg {
-  display: block;
 }
 
 .share-link-hint {
@@ -712,10 +449,6 @@ body {
 @media (max-width: 600px) {
   .share-link-display {
     flex-direction: column;
-  }
-
-  .share-link-copy-btn {
-    width: 100%;
   }
 }
 

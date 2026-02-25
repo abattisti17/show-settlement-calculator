@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface ShareLinkManagerProps {
   showId: string;
   showName: string;
+  resultsStale?: boolean;
 }
 
 interface ShareLinkData {
@@ -17,6 +20,7 @@ interface ShareLinkData {
 export default function ShareLinkManager({
   showId,
   showName,
+  resultsStale = false,
 }: ShareLinkManagerProps) {
   const [shareLink, setShareLink] = useState<ShareLinkData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +115,7 @@ export default function ShareLinkManager({
 
   // Copy link to clipboard
   async function handleCopyLink() {
-    if (!shareLink || !shareLink.token) return;
+    if (!shareLink || !shareLink.token || resultsStale) return;
 
     const fullUrl = `${window.location.origin}/s/${shareLink.token}`;
 
@@ -138,21 +142,27 @@ export default function ShareLinkManager({
       <h3 className="share-link-title">Share this Settlement</h3>
 
       {error && <div className="share-link-error">{error}</div>}
+      {resultsStale && (
+        <div className="share-link-error">
+          Recalculate and save before sharing to avoid sending outdated numbers.
+        </div>
+      )}
 
       {!shareLink?.exists ? (
         // No share link exists yet
         <div className="share-link-generate">
           <p className="share-link-description">
-            Generate a shareable link to send this settlement to others. Anyone
-            with the link can view the settlement details.
+            Generate a secure read-only link for {showName || "this settlement"}.
+            Anyone with the link can view, but not edit.
           </p>
-          <button
+          <Button
             onClick={handleGenerateLink}
-            disabled={loading}
-            className="share-link-btn-primary"
+            loading={loading}
+            variant="primary"
+            size="sm"
           >
             Generate Share Link
-          </button>
+          </Button>
         </div>
       ) : (
         // Share link exists
@@ -168,58 +178,36 @@ export default function ShareLinkManager({
                 {shareLink.is_active ? "Active" : "Inactive"}
               </span>
             </div>
-            <button
+            <Button
               onClick={handleToggleActive}
-              disabled={toggling}
-              className="share-link-toggle-btn"
+              loading={toggling}
+              variant="ghost"
+              size="sm"
             >
-              {toggling
-                ? "Updating..."
-                : shareLink.is_active
+              {shareLink.is_active
                 ? "Deactivate"
                 : "Activate"}
-            </button>
+            </Button>
           </div>
 
           {shareLink.is_active && (
             <>
               <div className="share-link-display">
-                <input
-                  type="text"
+                <Input
+                  label="Share link"
                   value={`${window.location.origin}/s/${shareLink.token}`}
                   readOnly
-                  className="share-link-input"
                   onClick={(e) => e.currentTarget.select()}
                 />
-                <button
+                <Button
                   onClick={handleCopyLink}
-                  className="share-link-copy-btn"
+                  disabled={resultsStale}
+                  variant="secondary"
+                  size="sm"
+                  title={resultsStale ? "Recalculate and save before sharing" : undefined}
                 >
-                  {copySuccess ? (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  )}
-                </button>
+                  {copySuccess ? "Copied" : "Copy Link"}
+                </Button>
               </div>
               <p className="share-link-hint">
                 Share this link with artists, venues, or anyone who needs to see

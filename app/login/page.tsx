@@ -164,32 +164,32 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <Input
-              type="email"
-              id="email"
-              label="Email"
-              className="form-group"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              disabled={loading}
-            />
-
-            {authMethod === "password" && (
+            <div className="auth-form-fields">
               <Input
-                type="password"
-                id="password"
-                label="Password"
-                className="form-group"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                type="email"
+                id="email"
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
                 required
                 disabled={loading}
-                minLength={6}
               />
-            )}
+
+              {authMethod === "password" && (
+                <Input
+                  type="password"
+                  id="password"
+                  label="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  minLength={6}
+                />
+              )}
+            </div>
 
             {/* Error Message */}
             {error && <div className="error-message">{error}</div>}
@@ -201,8 +201,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               variant="primary"
+              size="lg"
               loading={loading}
-              className="auth-submit-btn"
+              className="ds-btn-block"
             >
               {loading
                 ? "Loading..."

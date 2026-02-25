@@ -7,6 +7,12 @@
   cursor: pointer;
 }
 
+.ds-popover-trigger:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  border-radius: var(--radius-md);
+}
+
 .ds-popover-panel {
   background: var(--color-bg-1);
   border: 1px solid var(--color-border-strong);

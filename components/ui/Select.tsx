@@ -19,7 +19,8 @@ export function Select({
   children,
   ...rest
 }: SelectProps) {
-  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+  const generatedId = React.useId();
+  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : `select-${generatedId}`);
 
   return (
     <div

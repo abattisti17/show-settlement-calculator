@@ -16,9 +16,12 @@ export function Input({
   size = "md",
   className,
   id,
+  type,
+  onWheel,
   ...rest
 }: InputProps) {
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+  const generatedId = React.useId();
+  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : `input-${generatedId}`);
 
   return (
     <div
@@ -37,6 +40,7 @@ export function Input({
       )}
       <input
         id={inputId}
+        type={type}
         className={`ds-input ds-input-${size}`}
         aria-invalid={error ? true : undefined}
         aria-describedby={
@@ -46,6 +50,12 @@ export function Input({
             ? `${inputId}-hint`
             : undefined
         }
+        onWheel={(event) => {
+          onWheel?.(event);
+          if (type === "number") {
+            event.currentTarget.blur();
+          }
+        }}
         {...rest}
       />
       {error && (
