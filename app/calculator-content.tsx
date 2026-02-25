@@ -15,7 +15,7 @@ import { Icon } from "@/components/ui/Icon";
 import ShareLinkManager from "./components/ShareLinkManager";
 import "./calculator.css";
 
-type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage" | "guarantee_plus_percentage";
+type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage" | "guarantee_plus_percentage" | "percentage_of_gross" | "door_deal";
 
 interface TicketTier {
   id: string;
@@ -30,6 +30,20 @@ interface ExpenseItem {
   label: string;
   amount: string;
 }
+
+interface BuyoutItem {
+  id: string;
+  label: string;
+  amount: string;
+}
+
+const COMMON_BUYOUTS = [
+  "Catering Buyout",
+  "Hotel / Accommodation",
+  "Production Buyout",
+  "Ground Transport",
+  "Backline Buyout",
+];
 
 const COMMON_EXPENSES = [
   "Sound",
@@ -51,12 +65,21 @@ interface FormData {
   ticketTiers: TicketTier[];
   capacity: string;
   taxRate: string;
+  taxMode: string;
+  ccFeeRate: string;
+  ccFeeMode: string;
   expenseItems: ExpenseItem[];
   dealType: DealType;
   guarantee: string;
   percentage: string;
   breakeven: string;
   deposit: string;
+  withholdingRate: string;
+  withholdingState: string;
+  buyoutItems: BuyoutItem[];
+  buyoutMode: string;
+  merchGross: string;
+  merchVenuePercent: string;
 }
 
 interface CalculationResult {
@@ -71,9 +94,19 @@ interface CalculationResult {
   artistPayout: number;
   overage?: number;
   breakeven?: number;
+  ccFees?: number;
+  withholdingAmount?: number;
+  withholdingState?: string;
+  buyoutItems?: { label: string; amount: number }[];
+  totalBuyouts?: number;
   deposit: number;
   balanceDue: number;
   venuePayout: number;
+  merchGross?: number;
+  merchVenueCut?: number;
+  merchNetToArtist?: number;
+  totalDueToArtist?: number;
+  calculatedAt?: string;
 }
 
 export interface CalculatorContentProps {
@@ -96,12 +129,218 @@ function parseNumber(value: string): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function warnIfNotNumeric(value: string, fieldName: string, warnings: string[]) {
+  const trimmed = value.trim();
+  if (trimmed && isNaN(parseFloat(trimmed))) {
+    warnings.push(`"${fieldName}" contains "${trimmed}" — treated as 0.`);
+  }
+}
+
+type ComputeOutput =
+  | { ok: true; result: CalculationResult; warnings: string[] }
+  | { ok: false; error: string };
+
+function computeSettlement(data: FormData): ComputeOutput {
+  const warnings: string[] = [];
+  const taxRate = parseNumber(data.taxRate);
+  const guarantee = round2(parseNumber(data.guarantee));
+  const percentage = parseNumber(data.percentage);
+
+  const ccFeeRate = parseNumber(data.ccFeeRate);
+  const ccOffTop = data.ccFeeMode === "off_top";
+  const taxIsInclusive = data.taxMode === "inclusive";
+
+  warnIfNotNumeric(data.taxRate, "Tax Rate", warnings);
+  warnIfNotNumeric(data.ccFeeRate, "CC Fee Rate", warnings);
+  warnIfNotNumeric(data.guarantee, "Guarantee", warnings);
+  warnIfNotNumeric(data.percentage, "Percentage", warnings);
+  warnIfNotNumeric(data.deposit, "Deposit", warnings);
+  warnIfNotNumeric(data.breakeven, "Breakeven", warnings);
+
+  const parsedTiers = data.ticketTiers
+    .filter((t) => parseNumber(t.price) > 0 || parseNumber(t.sold) > 0)
+    .map((t) => {
+      warnIfNotNumeric(t.price, `${t.name || "Tier"} Price`, warnings);
+      warnIfNotNumeric(t.sold, `${t.name || "Tier"} Tickets Sold`, warnings);
+      const price = round2(parseNumber(t.price));
+      const sold = parseNumber(t.sold);
+      const comps = parseNumber(t.comps);
+      return {
+        name: t.name.trim() || "General Admission",
+        price,
+        sold,
+        comps,
+        revenue: round2(price * sold),
+      };
+    });
+
+  const totalTicketsSold = parsedTiers.reduce((sum, t) => sum + t.sold, 0);
+  const totalComps = parsedTiers.reduce((sum, t) => sum + t.comps, 0);
+  const grossRevenue = round2(parsedTiers.reduce((sum, t) => sum + t.revenue, 0));
+
+  const parsedExpenseItems = data.expenseItems
+    .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
+    .map((item) => {
+      warnIfNotNumeric(item.amount, `Expense "${item.label.trim() || "Unlabeled"}"`, warnings);
+      return {
+        label: item.label.trim() || "Unlabeled Expense",
+        amount: round2(parseNumber(item.amount)),
+      };
+    });
+
+  const parsedBuyoutItems = data.buyoutItems
+    .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
+    .map((item) => {
+      warnIfNotNumeric(item.amount, `Buyout "${item.label.trim() || "Unlabeled"}"`, warnings);
+      return {
+        label: item.label.trim() || "Unlabeled Buyout",
+        amount: round2(parseNumber(item.amount)),
+      };
+    });
+  const totalBuyouts = round2(parsedBuyoutItems.reduce((sum, item) => sum + item.amount, 0));
+  const buyoutsAsExpense = data.buyoutMode === "show_expense";
+
+  let totalExpenses = round2(parsedExpenseItems.reduce((sum, item) => sum + item.amount, 0));
+  if (buyoutsAsExpense && totalBuyouts > 0) {
+    totalExpenses = round2(totalExpenses + totalBuyouts);
+  }
+
+  if (parsedTiers.length === 0 || grossRevenue <= 0) {
+    return { ok: false, error: "Please enter at least one ticket tier with a valid price and quantity sold." };
+  }
+
+  if (data.dealType === "guarantee" && guarantee <= 0) {
+    return { ok: false, error: "Please enter a valid guarantee amount." };
+  }
+
+  if (
+    (data.dealType === "percentage" || data.dealType === "percentage_of_gross" || data.dealType === "door_deal") &&
+    percentage <= 0
+  ) {
+    return { ok: false, error: "Please enter a valid percentage." };
+  }
+
+  if (
+    data.dealType === "guarantee_vs_percentage" &&
+    (guarantee <= 0 || percentage <= 0)
+  ) {
+    return { ok: false, error: "Please enter both guarantee amount and percentage." };
+  }
+
+  if (
+    data.dealType === "guarantee_plus_percentage" &&
+    (guarantee <= 0 || percentage <= 0)
+  ) {
+    return { ok: false, error: "Please enter both guarantee amount and back-end percentage." };
+  }
+
+  const taxAmount = taxIsInclusive
+    ? round2(grossRevenue * taxRate / (100 + taxRate))
+    : round2(grossRevenue * (taxRate / 100));
+  const ccFees = ccFeeRate > 0 ? round2(grossRevenue * (ccFeeRate / 100)) : 0;
+  const netProfit = ccOffTop
+    ? round2(grossRevenue - taxAmount - ccFees - totalExpenses)
+    : round2(grossRevenue - taxAmount - totalExpenses);
+
+  let artistPayout: number;
+  let overage: number | undefined;
+  let breakevenPoint: number | undefined;
+
+  switch (data.dealType) {
+    case "guarantee":
+      artistPayout = guarantee;
+      break;
+    case "percentage":
+      artistPayout = round2(Math.max(0, netProfit * (percentage / 100)));
+      break;
+    case "guarantee_vs_percentage": {
+      const percentageShare = round2(Math.max(0, netProfit * (percentage / 100)));
+      artistPayout = Math.max(guarantee, percentageShare);
+      break;
+    }
+    case "guarantee_plus_percentage": {
+      const userBreakeven = round2(parseNumber(data.breakeven));
+      breakevenPoint = userBreakeven > 0 ? userBreakeven : round2(guarantee + totalExpenses);
+      overage = round2(Math.max(0, (netProfit - breakevenPoint) * (percentage / 100)));
+      artistPayout = round2(guarantee + overage);
+      break;
+    }
+    case "percentage_of_gross":
+      artistPayout = round2(Math.max(0, grossRevenue * (percentage / 100)));
+      break;
+    case "door_deal":
+      artistPayout = round2(Math.max(0, (grossRevenue - taxAmount) * (percentage / 100)));
+      break;
+    default:
+      artistPayout = 0;
+  }
+
+  const venuePayout = ccOffTop
+    ? round2(netProfit - artistPayout)
+    : round2(netProfit - artistPayout - ccFees);
+  const withholdingRate = parseNumber(data.withholdingRate);
+  warnIfNotNumeric(data.withholdingRate, "Withholding Rate", warnings);
+  const withholdingAmount = withholdingRate > 0 ? round2(artistPayout * (withholdingRate / 100)) : 0;
+
+  const deposit = round2(parseNumber(data.deposit));
+  const buyoutDeduction = (!buyoutsAsExpense && totalBuyouts > 0) ? totalBuyouts : 0;
+  const balanceDue = round2(artistPayout - deposit - withholdingAmount - buyoutDeduction);
+
+  const merchGross = round2(parseNumber(data.merchGross));
+  const merchVenuePercent = parseNumber(data.merchVenuePercent);
+  warnIfNotNumeric(data.merchGross, "Merch Gross Sales", warnings);
+  warnIfNotNumeric(data.merchVenuePercent, "Venue Merch %", warnings);
+  const merchVenueCut = merchGross > 0 ? round2(merchGross * (merchVenuePercent / 100)) : 0;
+  const merchNetToArtist = round2(merchGross - merchVenueCut);
+  const totalDueToArtist = merchGross > 0 ? round2(balanceDue + merchNetToArtist) : undefined;
+
+  if (venuePayout < 0) {
+    warnings.push("Venue payout is negative — the house is taking a loss on this show.");
+  }
+
+  return {
+    ok: true,
+    result: {
+      grossRevenue,
+      ticketTiers: parsedTiers,
+      totalTicketsSold,
+      totalComps,
+      taxAmount,
+      totalExpenses,
+      expenseItems: parsedExpenseItems,
+      netProfit,
+      artistPayout,
+      overage,
+      breakeven: breakevenPoint,
+      ccFees: ccFees > 0 ? ccFees : undefined,
+      withholdingAmount: withholdingAmount > 0 ? withholdingAmount : undefined,
+      withholdingState: withholdingAmount > 0 && data.withholdingState.trim() ? data.withholdingState.trim() : undefined,
+      buyoutItems: parsedBuyoutItems.length > 0 ? parsedBuyoutItems : undefined,
+      totalBuyouts: totalBuyouts > 0 ? totalBuyouts : undefined,
+      deposit,
+      balanceDue,
+      venuePayout,
+      merchGross: merchGross > 0 ? merchGross : undefined,
+      merchVenueCut: merchGross > 0 ? merchVenueCut : undefined,
+      merchNetToArtist: merchGross > 0 ? merchNetToArtist : undefined,
+      totalDueToArtist,
+      calculatedAt: new Date().toISOString(),
+    },
+    warnings,
+  };
+}
+
 function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const tierIdCounter = useRef(2);
   const expenseIdCounter = useRef(2);
+  const buyoutIdCounter = useRef(2);
 
   const [formData, setFormData] = useState<FormData>({
     showName: "",
@@ -109,15 +348,26 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     ticketTiers: [{ id: "1", name: "General Admission", price: "", sold: "", comps: "" }],
     capacity: "",
     taxRate: "",
+    taxMode: "exclusive",
+    ccFeeRate: "",
+    ccFeeMode: "expense",
     expenseItems: [{ id: "1", label: "", amount: "" }],
     dealType: "guarantee",
     guarantee: "",
     percentage: "",
     breakeven: "",
     deposit: "",
+    withholdingRate: "",
+    withholdingState: "",
+    buyoutItems: [{ id: "1", label: "", amount: "" }],
+    buyoutMode: "deduct_from_balance",
+    merchGross: "",
+    merchVenuePercent: "",
   });
 
   const [result, setResult] = useState<CalculationResult | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [resultsStale, setResultsStale] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [currentShowId, setCurrentShowId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -189,6 +439,8 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             loadedExpenseItems = [{ id: "1", label: "", amount: "" }];
           }
           expenseIdCounter.current = loadedExpenseItems.length + 1;
+          const loadedBuyoutCount = data.inputs.buyoutItems?.length || 1;
+          buyoutIdCounter.current = loadedBuyoutCount + 1;
 
           setFormData({
             showName: data.title || '',
@@ -196,12 +448,29 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             ticketTiers: loadedTiers,
             capacity: data.inputs.capacity || '',
             taxRate: data.inputs.taxRate || '',
+            taxMode: data.inputs.taxMode || 'exclusive',
+            ccFeeRate: data.inputs.ccFeeRate || '',
+            ccFeeMode: data.inputs.ccFeeMode || 'expense',
             expenseItems: loadedExpenseItems,
             dealType: data.inputs.dealType || 'guarantee',
             guarantee: data.inputs.guarantee || '',
             percentage: data.inputs.percentage || '',
             breakeven: data.inputs.breakeven || '',
             deposit: data.inputs.deposit || '',
+            withholdingRate: data.inputs.withholdingRate || '',
+            withholdingState: data.inputs.withholdingState || '',
+            buyoutItems: data.inputs.buyoutItems && data.inputs.buyoutItems.length > 0
+              ? data.inputs.buyoutItems.map(
+                  (item: { label: string; amount: string }, i: number) => ({
+                    id: String(i + 1),
+                    label: item.label || "",
+                    amount: item.amount || "",
+                  })
+                )
+              : [{ id: "1", label: "", amount: "" }],
+            buyoutMode: data.inputs.buyoutMode || 'deduct_from_balance',
+            merchGross: data.inputs.merchGross || '',
+            merchVenuePercent: data.inputs.merchVenuePercent || '',
           });
           setResult(data.results);
           setCurrentShowId(data.id);
@@ -220,6 +489,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errorMessage) setErrorMessage("");
+    if (result) setResultsStale(true);
   }
 
   function addTicketTier() {
@@ -228,6 +498,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ...prev,
       ticketTiers: [...prev.ticketTiers, { id, name: "", price: "", sold: "", comps: "" }],
     }));
+    if (result) setResultsStale(true);
   }
 
   function removeTicketTier(id: string) {
@@ -235,6 +506,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ...prev,
       ticketTiers: prev.ticketTiers.filter((tier) => tier.id !== id),
     }));
+    if (result) setResultsStale(true);
   }
 
   function updateTicketTier(id: string, field: keyof Omit<TicketTier, "id">, value: string) {
@@ -245,6 +517,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ),
     }));
     if (errorMessage) setErrorMessage("");
+    if (result) setResultsStale(true);
   }
 
   function addExpenseItem() {
@@ -253,6 +526,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ...prev,
       expenseItems: [...prev.expenseItems, { id, label: "", amount: "" }],
     }));
+    if (result) setResultsStale(true);
   }
 
   function removeExpenseItem(id: string) {
@@ -260,6 +534,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ...prev,
       expenseItems: prev.expenseItems.filter((item) => item.id !== id),
     }));
+    if (result) setResultsStale(true);
   }
 
   function updateExpenseItem(id: string, field: "label" | "amount", value: string) {
@@ -270,132 +545,166 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ),
     }));
     if (errorMessage) setErrorMessage("");
+    if (result) setResultsStale(true);
+  }
+
+  function addBuyoutItem() {
+    const id = String(buyoutIdCounter.current++);
+    setFormData((prev) => ({
+      ...prev,
+      buyoutItems: [...prev.buyoutItems, { id, label: "", amount: "" }],
+    }));
+    if (result) setResultsStale(true);
+  }
+
+  function removeBuyoutItem(id: string) {
+    setFormData((prev) => ({
+      ...prev,
+      buyoutItems: prev.buyoutItems.filter((item) => item.id !== id),
+    }));
+    if (result) setResultsStale(true);
+  }
+
+  function updateBuyoutItem(id: string, field: "label" | "amount", value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      buyoutItems: prev.buyoutItems.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      ),
+    }));
+    if (errorMessage) setErrorMessage("");
+    if (result) setResultsStale(true);
   }
 
   function handleCalculate() {
-    const taxRate = parseNumber(formData.taxRate);
-    const guarantee = parseNumber(formData.guarantee);
-    const percentage = parseNumber(formData.percentage);
-
-    const parsedTiers = formData.ticketTiers
-      .filter((t) => parseNumber(t.price) > 0 || parseNumber(t.sold) > 0)
-      .map((t) => {
-        const price = parseNumber(t.price);
-        const sold = parseNumber(t.sold);
-        const comps = parseNumber(t.comps);
-        return {
-          name: t.name.trim() || "General Admission",
-          price,
-          sold,
-          comps,
-          revenue: price * sold,
-        };
-      });
-
-    const totalTicketsSold = parsedTiers.reduce((sum, t) => sum + t.sold, 0);
-    const totalComps = parsedTiers.reduce((sum, t) => sum + t.comps, 0);
-    const grossRevenue = parsedTiers.reduce((sum, t) => sum + t.revenue, 0);
-
-    const parsedExpenseItems = formData.expenseItems
-      .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
-      .map((item) => ({
-        label: item.label.trim() || "Unlabeled Expense",
-        amount: parseNumber(item.amount),
-      }));
-    const totalExpenses = parsedExpenseItems.reduce((sum, item) => sum + item.amount, 0);
-
-    if (parsedTiers.length === 0 || grossRevenue <= 0) {
-      setErrorMessage("Please enter at least one ticket tier with a valid price and quantity sold.");
+    const output = computeSettlement(formData);
+    if (!output.ok) {
+      setErrorMessage(output.error);
       setResult(null);
+      setWarnings([]);
       return;
     }
-
-    if (formData.dealType === "guarantee" && guarantee <= 0) {
-      setErrorMessage("Please enter a valid guarantee amount.");
-      setResult(null);
-      return;
-    }
-
-    if (formData.dealType === "percentage" && percentage <= 0) {
-      setErrorMessage("Please enter a valid percentage.");
-      setResult(null);
-      return;
-    }
-
-    if (
-      formData.dealType === "guarantee_vs_percentage" &&
-      (guarantee <= 0 || percentage <= 0)
-    ) {
-      setErrorMessage("Please enter both guarantee amount and percentage.");
-      setResult(null);
-      return;
-    }
-
-    if (
-      formData.dealType === "guarantee_plus_percentage" &&
-      (guarantee <= 0 || percentage <= 0)
-    ) {
-      setErrorMessage("Please enter both guarantee amount and back-end percentage.");
-      setResult(null);
-      return;
-    }
-
-    const taxAmount = grossRevenue * (taxRate / 100);
-    const netProfit = grossRevenue - taxAmount - totalExpenses;
-
-    let artistPayout: number;
-    let overage: number | undefined;
-    let breakevenPoint: number | undefined;
-
-    switch (formData.dealType) {
-      case "guarantee":
-        artistPayout = guarantee;
-        break;
-      case "percentage":
-        artistPayout = Math.max(0, netProfit * (percentage / 100));
-        break;
-      case "guarantee_vs_percentage": {
-        const percentageShare = Math.max(0, netProfit * (percentage / 100));
-        artistPayout = Math.max(guarantee, percentageShare);
-        break;
-      }
-      case "guarantee_plus_percentage": {
-        const userBreakeven = parseNumber(formData.breakeven);
-        breakevenPoint = userBreakeven > 0 ? userBreakeven : guarantee + totalExpenses;
-        overage = Math.max(0, (netProfit - breakevenPoint) * (percentage / 100));
-        artistPayout = guarantee + overage;
-        break;
-      }
-      default:
-        artistPayout = 0;
-    }
-
-    const venuePayout = netProfit - artistPayout;
-    const deposit = parseNumber(formData.deposit);
-    const balanceDue = artistPayout - deposit;
-
-    setResult({
-      grossRevenue,
-      ticketTiers: parsedTiers,
-      totalTicketsSold,
-      totalComps,
-      taxAmount,
-      totalExpenses,
-      expenseItems: parsedExpenseItems,
-      netProfit,
-      artistPayout,
-      overage,
-      breakeven: breakevenPoint,
-      deposit,
-      balanceDue,
-      venuePayout,
-    });
-
+    setResult(output.result);
+    setWarnings(output.warnings);
+    setResultsStale(false);
     setErrorMessage("");
   }
 
   function handlePrint() {
     window.print();
+  }
+
+  function handleExportCSV() {
+    if (!result) return;
+
+    const rows: [string, string][] = [];
+    if (formData.showName) rows.push(["Show", formData.showName]);
+    if (formData.artistName) rows.push(["Artist", formData.artistName]);
+    rows.push([]);
+
+    if (result.ticketTiers && result.ticketTiers.length > 1) {
+      for (const tier of result.ticketTiers) {
+        rows.push([`${tier.name} (${tier.sold} × ${formatCurrency(tier.price)})`, formatCurrency(tier.revenue)]);
+      }
+    }
+    const ticketsSoldNote = result.totalTicketsSold
+      ? ` (${result.totalTicketsSold} sold${result.totalComps ? `, ${result.totalComps} comps` : ""})`
+      : "";
+    rows.push([`Gross Revenue${ticketsSoldNote}`, formatCurrency(result.grossRevenue)]);
+
+    const taxLabel = `Tax (${formData.taxRate || "0"}%${formData.taxMode === "inclusive" ? ", included in price" : ""})`;
+    rows.push([taxLabel, `−${formatCurrency(result.taxAmount)}`]);
+
+    if (result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === "off_top") {
+      rows.push([`CC Processing Fees (${formData.ccFeeRate}%)`, `−${formatCurrency(result.ccFees)}`]);
+    }
+
+    if (result.expenseItems && result.expenseItems.length > 0) {
+      for (const item of result.expenseItems) {
+        rows.push([item.label, `−${formatCurrency(item.amount)}`]);
+      }
+      if (result.buyoutItems && result.buyoutItems.length > 0 && formData.buyoutMode === "show_expense") {
+        for (const item of result.buyoutItems) {
+          rows.push([`${item.label} (buyout)`, `−${formatCurrency(item.amount)}`]);
+        }
+      }
+      if (result.expenseItems.length > 1 || (result.buyoutItems && result.buyoutItems.length > 0 && formData.buyoutMode === "show_expense")) {
+        rows.push(["Total Expenses", `−${formatCurrency(result.totalExpenses)}`]);
+      }
+    } else {
+      rows.push(["Expenses", `−${formatCurrency(result.totalExpenses)}`]);
+    }
+
+    rows.push(["Net", formatCurrency(result.netProfit)]);
+    rows.push([]);
+
+    if (result.overage != null && result.breakeven != null) {
+      rows.push(["Guarantee", formatCurrency(result.artistPayout - result.overage)]);
+      rows.push(["Breakeven Point", formatCurrency(result.breakeven)]);
+      rows.push(["Back-End Overage", formatCurrency(result.overage)]);
+    }
+
+    let artistLabel = "Artist Payout";
+    if (result.overage != null) artistLabel += " (Guarantee + Overage)";
+    if (formData.dealType === "percentage_of_gross") artistLabel += ` (${formData.percentage}% of Gross)`;
+    if (formData.dealType === "door_deal") artistLabel += ` (${formData.percentage}% of Gross After Tax)`;
+    rows.push([artistLabel, formatCurrency(result.artistPayout)]);
+
+    if (result.withholdingAmount != null && result.withholdingAmount > 0) {
+      const whLabel = `Withholding Tax (${formData.withholdingRate}%${result.withholdingState ? `, ${result.withholdingState}` : ""})`;
+      rows.push([whLabel, `−${formatCurrency(result.withholdingAmount)}`]);
+    }
+    if (result.buyoutItems && result.buyoutItems.length > 0 && formData.buyoutMode === "deduct_from_balance") {
+      for (const item of result.buyoutItems) {
+        rows.push([item.label, `−${formatCurrency(item.amount)}`]);
+      }
+    }
+    if (result.deposit > 0) {
+      rows.push(["Deposit Paid", `−${formatCurrency(result.deposit)}`]);
+    }
+    const hasDeductions = result.deposit > 0 || (result.withholdingAmount != null && result.withholdingAmount > 0) || (result.totalBuyouts != null && result.totalBuyouts > 0 && formData.buyoutMode === "deduct_from_balance");
+    if (hasDeductions) {
+      const balanceLabel = result.balanceDue < 0
+        ? "Overpayment (due back to promoter)"
+        : "Balance Due at Settlement";
+      rows.push([balanceLabel, formatCurrency(Math.abs(result.balanceDue))]);
+    }
+
+    if (result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === "expense") {
+      rows.push([`CC Processing Fees (${formData.ccFeeRate}%, venue cost)`, `−${formatCurrency(result.ccFees)}`]);
+    }
+
+    const venueLabel = result.venuePayout < 0 ? "Venue Loss" : "Promoter/House Settlement";
+    const venueValue = result.venuePayout < 0
+      ? `−${formatCurrency(Math.abs(result.venuePayout))}`
+      : formatCurrency(result.venuePayout);
+    rows.push([venueLabel, venueValue]);
+
+    if (result.merchGross != null && result.merchGross > 0) {
+      rows.push([]);
+      rows.push(["Gross Merch Sales", formatCurrency(result.merchGross)]);
+      rows.push([`Venue Merch Cut (${formData.merchVenuePercent || "0"}%)`, `−${formatCurrency(result.merchVenueCut ?? 0)}`]);
+      rows.push(["Net Merch to Artist", formatCurrency(result.merchNetToArtist ?? 0)]);
+      if (result.totalDueToArtist != null) {
+        rows.push([]);
+        rows.push(["Total Due to Artist", formatCurrency(result.totalDueToArtist)]);
+      }
+    }
+
+    const csvContent = rows
+      .map((row) => row.length === 0 ? "" : row.map((cell) => `"${(cell ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const filename = formData.showName
+      ? `${formData.showName.replace(/[^a-zA-Z0-9-_ ]/g, "").trim()}-settlement.csv`
+      : "settlement.csv";
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   async function handleSaveShow() {
@@ -406,12 +715,17 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       return;
     }
 
-    if (!result) {
+    const freshCalc = computeSettlement(formData);
+    if (!freshCalc.ok) {
       setSaveStatus('error');
-      setSaveMessage('Please calculate the settlement before saving.');
+      setSaveMessage('Cannot save: ' + freshCalc.error);
       setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
       return;
     }
+
+    setResult(freshCalc.result);
+    setWarnings(freshCalc.warnings);
+    setResultsStale(false);
 
     setSaveStatus('saving');
     setSaveMessage('');
@@ -427,6 +741,9 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           ticketPrice: formData.ticketTiers[0]?.price || '',
           ticketsSold: String(formData.ticketTiers.reduce((sum, t) => sum + parseNumber(t.sold), 0)),
           taxRate: formData.taxRate,
+          taxMode: formData.taxMode,
+          ccFeeRate: formData.ccFeeRate,
+          ccFeeMode: formData.ccFeeMode,
           expenseItems: formData.expenseItems.map(({ label, amount }) => ({ label, amount })),
           totalExpenses: String(
             formData.expenseItems.reduce((sum, item) => sum + parseNumber(item.amount), 0)
@@ -436,8 +753,14 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           percentage: formData.percentage,
           breakeven: formData.breakeven,
           deposit: formData.deposit,
+          withholdingRate: formData.withholdingRate,
+          withholdingState: formData.withholdingState,
+          buyoutItems: formData.buyoutItems.map(({ label, amount }) => ({ label, amount })),
+          buyoutMode: formData.buyoutMode,
+          merchGross: formData.merchGross,
+          merchVenuePercent: formData.merchVenuePercent,
         },
-        results: result,
+        results: freshCalc.result,
       };
 
       let savedShowId: string;
@@ -499,15 +822,26 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           title="Show Settlement Calculator"
           description="Quickly calculate artist and venue payouts for a live show. For small venues and indie promoters who are tired of broken spreadsheets. Plug in your show numbers and get a clean, consistent settlement breakdown."
           action={
-            <Button
-              onClick={handleSaveShow}
-              disabled={!result || saveStatus === 'saving'}
-              variant="primary"
-              size="sm"
-              loading={saveStatus === 'saving'}
-            >
-              {currentShowId ? 'Update Show' : 'Save Show'}
-            </Button>
+            <div className="calculator-header-actions">
+              {result && (
+                <Button
+                  onClick={handleExportCSV}
+                  variant="ghost"
+                  size="sm"
+                >
+                  Export CSV
+                </Button>
+              )}
+              <Button
+                onClick={handleSaveShow}
+                disabled={!result || saveStatus === 'saving'}
+                variant="primary"
+                size="sm"
+                loading={saveStatus === 'saving'}
+              >
+                {currentShowId ? 'Update Show' : 'Save Show'}
+              </Button>
+            </div>
           }
         />
 
@@ -588,9 +922,23 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             step={1}
           />
 
-          <h3 className="calculator-section-title">Tax & Expenses</h3>
-          <Input id="taxRate" name="taxRate" label="Tax Rate (%)" type="number" value={formData.taxRate} onChange={handleInputChange} placeholder="ex: 10" min={0} max={100} step={0.1} />
+          <h3 className="calculator-section-title">Tax & Fees</h3>
+          <div className="calculator-form-row">
+            <Input id="taxRate" name="taxRate" label="Entertainment / Sales Tax (%)" type="number" value={formData.taxRate} onChange={handleInputChange} placeholder="ex: 10" min={0} max={100} step={0.1} hint="Amusement tax, sales tax, or venue tax rate" />
+            <Select id="taxMode" name="taxMode" label="Tax Handling" value={formData.taxMode} onChange={handleInputChange}>
+              <option value="exclusive">Tax added on top of ticket price</option>
+              <option value="inclusive">Ticket prices already include tax</option>
+            </Select>
+          </div>
+          <div className="calculator-form-row">
+            <Input id="ccFeeRate" name="ccFeeRate" label="CC Processing Fee (%)" type="number" value={formData.ccFeeRate} onChange={handleInputChange} placeholder="ex: 2.9" min={0} max={100} step={0.01} hint="Credit card / payment processing rate" />
+            <Select id="ccFeeMode" name="ccFeeMode" label="CC Fee Handling" value={formData.ccFeeMode} onChange={handleInputChange}>
+              <option value="expense">Venue expense (does not reduce artist split)</option>
+              <option value="off_top">Deducted from gross (shared cost)</option>
+            </Select>
+          </div>
 
+          <h3 className="calculator-section-title">Show Expenses</h3>
           <div className="calculator-expense-list">
             {formData.expenseItems.map((item, index) => (
               <div key={item.id} className="calculator-expense-row">
@@ -639,13 +987,15 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             <option value="percentage">Percentage of Net</option>
             <option value="guarantee_vs_percentage">Guarantee vs Percentage (whichever is higher)</option>
             <option value="guarantee_plus_percentage">Guarantee + Back-End Percentage</option>
+            <option value="percentage_of_gross">Percentage of Gross (before deductions)</option>
+            <option value="door_deal">Door Deal (% of gross after tax)</option>
           </Select>
 
           <div className="calculator-form-row">
             {(formData.dealType === "guarantee" || formData.dealType === "guarantee_vs_percentage" || formData.dealType === "guarantee_plus_percentage") && (
               <Input id="guarantee" name="guarantee" label="Guarantee Amount ($)" type="number" value={formData.guarantee} onChange={handleInputChange} placeholder="ex: 1000" min={0} step={0.01} />
             )}
-            {(formData.dealType === "percentage" || formData.dealType === "guarantee_vs_percentage" || formData.dealType === "guarantee_plus_percentage") && (
+            {(formData.dealType === "percentage" || formData.dealType === "guarantee_vs_percentage" || formData.dealType === "guarantee_plus_percentage" || formData.dealType === "percentage_of_gross" || formData.dealType === "door_deal") && (
               <Input id="percentage" name="percentage" label={formData.dealType === "guarantee_plus_percentage" ? "Back-End Percentage (%)" : "Percentage (%)"} type="number" value={formData.percentage} onChange={handleInputChange} placeholder="ex: 85" min={0} max={100} step={0.1} />
             )}
           </div>
@@ -677,6 +1027,104 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             step={0.01}
           />
 
+          <h3 className="calculator-section-title">Withholding & Buyouts (optional)</h3>
+          <div className="calculator-form-row">
+            <Input
+              id="withholdingRate"
+              name="withholdingRate"
+              label="Withholding Tax Rate (%)"
+              type="number"
+              value={formData.withholdingRate}
+              onChange={handleInputChange}
+              placeholder="ex: 7"
+              hint="State withholding for non-resident artists"
+              min={0}
+              max={100}
+              step={0.1}
+            />
+            <Input
+              id="withholdingState"
+              name="withholdingState"
+              label="Withholding State / Jurisdiction"
+              value={formData.withholdingState}
+              onChange={handleInputChange}
+              placeholder="ex: CA, NY, IL"
+            />
+          </div>
+          <div className="calculator-expense-list">
+            {formData.buyoutItems.map((item, index) => (
+              <div key={item.id} className="calculator-expense-row">
+                <Input
+                  label={index === 0 ? "Buyout" : undefined}
+                  value={item.label}
+                  onChange={(e) => updateBuyoutItem(item.id, "label", e.target.value)}
+                  placeholder="ex: Catering Buyout"
+                  list="common-buyouts"
+                />
+                <Input
+                  label={index === 0 ? "Amount ($)" : undefined}
+                  type="number"
+                  value={item.amount}
+                  onChange={(e) => updateBuyoutItem(item.id, "amount", e.target.value)}
+                  placeholder="ex: 500"
+                  min={0}
+                  step={0.01}
+                />
+                {formData.buyoutItems.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeBuyoutItem(item.id)}
+                    aria-label={`Remove ${item.label || "buyout"}`}
+                    className="calculator-expense-remove"
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+            ))}
+            <datalist id="common-buyouts">
+              {COMMON_BUYOUTS.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+            <Button variant="ghost" size="sm" onClick={addBuyoutItem} type="button">
+              + Add Buyout
+            </Button>
+          </div>
+          <Select id="buyoutMode" name="buyoutMode" label="Buyout Handling" value={formData.buyoutMode} onChange={handleInputChange}>
+            <option value="deduct_from_balance">Deduct from artist balance (venue provided these)</option>
+            <option value="show_expense">Treat as show expense (reduces net profit)</option>
+          </Select>
+
+          <h3 className="calculator-section-title">Merch (optional)</h3>
+          <div className="calculator-form-row">
+            <Input
+              id="merchGross"
+              name="merchGross"
+              label="Gross Merch Sales ($)"
+              type="number"
+              value={formData.merchGross}
+              onChange={handleInputChange}
+              placeholder="ex: 2000"
+              min={0}
+              step={0.01}
+            />
+            <Input
+              id="merchVenuePercent"
+              name="merchVenuePercent"
+              label="Venue Merch Cut (%)"
+              type="number"
+              value={formData.merchVenuePercent}
+              onChange={handleInputChange}
+              placeholder="ex: 20"
+              hint="Standard is 15–25% of gross merch"
+              min={0}
+              max={100}
+              step={0.1}
+            />
+          </div>
+
           {errorMessage && (
             <div className="calculator-save-status error" style={{ marginTop: "1rem" }}>{errorMessage}</div>
           )}
@@ -686,12 +1134,25 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           </Button>
         </Card>
 
+        {result && resultsStale && (
+          <div className="calculator-stale-banner">
+            Inputs have changed since last calculation. Recalculate to update results.
+          </div>
+        )}
+
         {result && (
           <section className="results-section" style={{ marginTop: "2rem" }}>
             <Card className="results-card" variant="elevated" padding="lg">
               <h2>Settlement Summary</h2>
               {formData.artistName && (
                 <p className="artist-name-display">Settlement for: {formData.artistName}</p>
+              )}
+              {warnings.length > 0 && (
+                <div className="calculator-warnings">
+                  {warnings.map((w, i) => (
+                    <p key={i}>{w}</p>
+                  ))}
+                </div>
               )}
               {result.ticketTiers && result.ticketTiers.length > 1 ? (
                 <>
@@ -717,9 +1178,17 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 </div>
               )}
               <div className="calculator-result-row result-row">
-                <span className="label">Tax</span>
+                <span className="label">
+                  Tax ({formData.taxRate || '0'}%{formData.taxMode === 'inclusive' ? ', included in price' : ''})
+                </span>
                 <span className="value">−{formatCurrency(result.taxAmount)}</span>
               </div>
+              {result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === 'off_top' && (
+                <div className="calculator-result-row result-row">
+                  <span className="label">CC Processing Fees ({formData.ccFeeRate}%)</span>
+                  <span className="value">−{formatCurrency(result.ccFees)}</span>
+                </div>
+              )}
               {result.expenseItems && result.expenseItems.length > 0 ? (
                 <>
                   {result.expenseItems.map((item, index) => (
@@ -728,7 +1197,15 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                       <span className="value">−{formatCurrency(item.amount)}</span>
                     </div>
                   ))}
-                  {result.expenseItems.length > 1 && (
+                  {result.buyoutItems && result.buyoutItems.length > 0 && formData.buyoutMode === 'show_expense' && (
+                    result.buyoutItems.map((item, index) => (
+                      <div key={`buyout-${index}`} className="calculator-result-row result-row">
+                        <span className="label">{item.label} (buyout)</span>
+                        <span className="value">−{formatCurrency(item.amount)}</span>
+                      </div>
+                    ))
+                  )}
+                  {(result.expenseItems.length > 1 || (result.buyoutItems && result.buyoutItems.length > 0 && formData.buyoutMode === 'show_expense')) && (
                     <div className="calculator-result-row result-row expense-subtotal">
                       <span className="label">Total Expenses</span>
                       <span className="value">−{formatCurrency(result.totalExpenses)}</span>
@@ -762,15 +1239,38 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 </>
               )}
               <div className="calculator-result-row result-row highlight artist-payout">
-                <span className="label">Artist Payout{result.overage != null ? ' (Guarantee + Overage)' : ''}</span>
+                <span className="label">
+                  Artist Payout
+                  {result.overage != null && ' (Guarantee + Overage)'}
+                  {formData.dealType === 'percentage_of_gross' && ` (${formData.percentage}% of Gross)`}
+                  {formData.dealType === 'door_deal' && ` (${formData.percentage}% of Gross After Tax)`}
+                </span>
                 <span className="value">{formatCurrency(result.artistPayout)}</span>
               </div>
-              {result.deposit > 0 && (
-                <>
-                  <div className="calculator-result-row result-row">
-                    <span className="label">Deposit Paid</span>
-                    <span className="value">−{formatCurrency(result.deposit)}</span>
+              {result.withholdingAmount != null && result.withholdingAmount > 0 && (
+                <div className="calculator-result-row result-row">
+                  <span className="label">
+                    Withholding Tax ({formData.withholdingRate}%{result.withholdingState ? `, ${result.withholdingState}` : ''})
+                  </span>
+                  <span className="value">−{formatCurrency(result.withholdingAmount)}</span>
+                </div>
+              )}
+              {result.buyoutItems && result.buyoutItems.length > 0 && formData.buyoutMode === 'deduct_from_balance' && (
+                result.buyoutItems.map((item, index) => (
+                  <div key={`buyout-deduct-${index}`} className="calculator-result-row result-row">
+                    <span className="label">{item.label}</span>
+                    <span className="value">−{formatCurrency(item.amount)}</span>
                   </div>
+                ))
+              )}
+              {(result.deposit > 0 || (result.withholdingAmount != null && result.withholdingAmount > 0) || (result.totalBuyouts != null && result.totalBuyouts > 0 && formData.buyoutMode === 'deduct_from_balance')) && (
+                <>
+                  {result.deposit > 0 && (
+                    <div className="calculator-result-row result-row">
+                      <span className="label">Deposit Paid</span>
+                      <span className="value">−{formatCurrency(result.deposit)}</span>
+                    </div>
+                  )}
                   <div className={`calculator-result-row result-row highlight ${result.balanceDue < 0 ? 'overpayment' : 'balance-due'}`}>
                     <span className="label">
                       {result.balanceDue < 0 ? 'Overpayment (due back to promoter)' : 'Balance Due at Settlement'}
@@ -779,10 +1279,52 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                   </div>
                 </>
               )}
-              <div className="calculator-result-row result-row highlight venue-payout">
-                <span className="label">Promoter/House Settlement</span>
-                <span className="value">{formatCurrency(result.venuePayout)}</span>
+              {result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === 'expense' && (
+                <div className="calculator-result-row result-row">
+                  <span className="label">CC Processing Fees ({formData.ccFeeRate}%, venue cost)</span>
+                  <span className="value">−{formatCurrency(result.ccFees)}</span>
+                </div>
+              )}
+              <div className={`calculator-result-row result-row highlight ${result.venuePayout < 0 ? 'venue-loss' : 'venue-payout'}`}>
+                <span className="label">
+                  {result.venuePayout < 0 ? 'Venue Loss' : 'Promoter/House Settlement'}
+                </span>
+                <span className="value">{result.venuePayout < 0 ? '−' : ''}{formatCurrency(Math.abs(result.venuePayout))}</span>
               </div>
+              {result.merchGross != null && result.merchGross > 0 && (
+                <>
+                  <h3 className="calculator-section-title" style={{ marginTop: "1.5rem" }}>Merch Settlement</h3>
+                  <div className="calculator-result-row result-row">
+                    <span className="label">Gross Merch Sales</span>
+                    <span className="value">{formatCurrency(result.merchGross)}</span>
+                  </div>
+                  <div className="calculator-result-row result-row">
+                    <span className="label">Venue Merch Cut ({formData.merchVenuePercent || '0'}%)</span>
+                    <span className="value">−{formatCurrency(result.merchVenueCut ?? 0)}</span>
+                  </div>
+                  <div className="calculator-result-row result-row highlight artist-payout">
+                    <span className="label">Net Merch to Artist</span>
+                    <span className="value">{formatCurrency(result.merchNetToArtist ?? 0)}</span>
+                  </div>
+                  {result.totalDueToArtist != null && (
+                    <>
+                      <h3 className="calculator-section-title" style={{ marginTop: "1.5rem" }}>Total</h3>
+                      <div className="calculator-result-row result-row">
+                        <span className="label">Show Balance Due</span>
+                        <span className="value">{formatCurrency(result.deposit > 0 ? result.balanceDue : result.artistPayout)}</span>
+                      </div>
+                      <div className="calculator-result-row result-row">
+                        <span className="label">Net Merch to Artist</span>
+                        <span className="value">{formatCurrency(result.merchNetToArtist ?? 0)}</span>
+                      </div>
+                      <div className="calculator-result-row result-row highlight artist-payout">
+                        <span className="label">Total Due to Artist</span>
+                        <span className="value">{formatCurrency(result.totalDueToArtist)}</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
               <Button variant="secondary" onClick={handlePrint} className="calculator-print-btn" style={{ width: "100%", marginTop: "1.25rem" }}>
                 🖨️ Print / Save as PDF
               </Button>

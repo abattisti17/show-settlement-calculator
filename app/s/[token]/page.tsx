@@ -31,6 +31,9 @@ interface Show {
     ticketPrice?: string;
     ticketsSold?: string;
     taxRate?: string;
+    taxMode?: string;
+    ccFeeRate?: string;
+    ccFeeMode?: string;
     totalExpenses?: string;
     expenseItems?: { label: string; amount: string }[];
     dealType?: string;
@@ -38,6 +41,12 @@ interface Show {
     percentage?: string;
     breakeven?: string;
     deposit?: string;
+    withholdingRate?: string;
+    withholdingState?: string;
+    buyoutItems?: { label: string; amount: string }[];
+    buyoutMode?: string;
+    merchGross?: string;
+    merchVenuePercent?: string;
   };
   results: {
     grossRevenue: number;
@@ -53,7 +62,17 @@ interface Show {
     breakeven?: number;
     deposit?: number;
     balanceDue?: number;
+    ccFees?: number;
+    withholdingAmount?: number;
+    withholdingState?: string;
+    buyoutItems?: { label: string; amount: number }[];
+    totalBuyouts?: number;
     venuePayout: number;
+    merchGross?: number;
+    merchVenueCut?: number;
+    merchNetToArtist?: number;
+    totalDueToArtist?: number;
+    calculatedAt?: string;
   };
   created_at: string;
   updated_at: string;
@@ -94,6 +113,10 @@ function formatDealType(dealType: string): string {
       return "Guarantee vs Percentage (whichever is higher)";
     case "guarantee_plus_percentage":
       return "Guarantee + Back-End Percentage";
+    case "percentage_of_gross":
+      return "Percentage of Gross (before deductions)";
+    case "door_deal":
+      return "Door Deal (% of gross after tax)";
     default:
       return dealType;
   }
@@ -228,6 +251,19 @@ export default async function SharedSettlementPage({
                 value={formatCurrency(parseFloat(typedShow.inputs.deposit))}
               />
             )}
+            {typedShow.inputs.withholdingRate && parseFloat(typedShow.inputs.withholdingRate) > 0 && (
+              <DescriptionList.Item
+                label="Withholding Tax:"
+                value={`${typedShow.inputs.withholdingRate}%${typedShow.inputs.withholdingState ? ` (${typedShow.inputs.withholdingState})` : ''}`}
+              />
+            )}
+            {typedShow.inputs.buyoutItems && typedShow.inputs.buyoutItems.length > 0 &&
+              typedShow.inputs.buyoutItems.some(b => parseFloat(b.amount) > 0) && (
+              <DescriptionList.Item
+                label="Buyout Handling:"
+                value={typedShow.inputs.buyoutMode === 'show_expense' ? 'Show expense' : 'Deducted from balance'}
+              />
+            )}
           </DescriptionList>
         </section>
 
@@ -274,7 +310,13 @@ export default async function SharedSettlementPage({
             {typedShow.inputs.taxRate && (
               <DescriptionList.Item
                 label="Tax Rate:"
-                value={`${typedShow.inputs.taxRate}%`}
+                value={`${typedShow.inputs.taxRate}%${typedShow.inputs.taxMode === 'inclusive' ? ' (included in price)' : ''}`}
+              />
+            )}
+            {typedShow.inputs.ccFeeRate && parseFloat(typedShow.inputs.ccFeeRate) > 0 && (
+              <DescriptionList.Item
+                label="CC Processing Fee:"
+                value={`${typedShow.inputs.ccFeeRate}%${typedShow.inputs.ccFeeMode === 'off_top' ? ' (off the top)' : ' (venue expense)'}`}
               />
             )}
             {typedShow.inputs.expenseItems && typedShow.inputs.expenseItems.length > 0 ? (
@@ -319,10 +361,17 @@ export default async function SharedSettlementPage({
               />
             )}
             <BreakdownList.Row
-              label="Tax"
+              label={`Tax (${typedShow.inputs.taxRate || '0'}%${typedShow.inputs.taxMode === 'inclusive' ? ', included in price' : ''})`}
               value={`−${formatCurrency(typedShow.results.taxAmount)}`}
               variant="negative"
             />
+            {typedShow.results.ccFees != null && typedShow.results.ccFees > 0 && typedShow.inputs.ccFeeMode === 'off_top' && (
+              <BreakdownList.Row
+                label={`CC Processing Fees (${typedShow.inputs.ccFeeRate}%)`}
+                value={`−${formatCurrency(typedShow.results.ccFees)}`}
+                variant="negative"
+              />
+            )}
             {typedShow.results.expenseItems && typedShow.results.expenseItems.length > 0 ? (
               <>
                 {typedShow.results.expenseItems.map((item, index) => (
@@ -333,7 +382,17 @@ export default async function SharedSettlementPage({
                     variant="negative"
                   />
                 ))}
-                {typedShow.results.expenseItems.length > 1 && (
+                {typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode === 'show_expense' && (
+                  typedShow.results.buyoutItems.map((item, index) => (
+                    <BreakdownList.Row
+                      key={`buyout-exp-${index}`}
+                      label={`${item.label} (buyout)`}
+                      value={`−${formatCurrency(item.amount)}`}
+                      variant="negative"
+                    />
+                  ))
+                )}
+                {(typedShow.results.expenseItems.length > 1 || (typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode === 'show_expense')) && (
                   <BreakdownList.Row
                     label="Total Expenses"
                     value={`−${formatCurrency(typedShow.results.totalExpenses)}`}
@@ -371,17 +430,48 @@ export default async function SharedSettlementPage({
               </>
             )}
             <BreakdownList.Row
-              label={typedShow.results.overage != null ? "Artist Payout (Guarantee + Overage)" : "Artist Payout"}
+              label={
+                typedShow.results.overage != null
+                  ? "Artist Payout (Guarantee + Overage)"
+                  : typedShow.inputs.dealType === "percentage_of_gross"
+                  ? `Artist Payout (${typedShow.inputs.percentage}% of Gross)`
+                  : typedShow.inputs.dealType === "door_deal"
+                  ? `Artist Payout (${typedShow.inputs.percentage}% of Gross After Tax)`
+                  : "Artist Payout"
+              }
               value={formatCurrency(typedShow.results.artistPayout)}
               variant="success"
             />
-            {typedShow.results.deposit != null && typedShow.results.deposit > 0 && (
-              <>
+            {typedShow.results.withholdingAmount != null && typedShow.results.withholdingAmount > 0 && (
+              <BreakdownList.Row
+                label={`Withholding Tax (${typedShow.inputs.withholdingRate}%${typedShow.results.withholdingState ? `, ${typedShow.results.withholdingState}` : ''})`}
+                value={`−${formatCurrency(typedShow.results.withholdingAmount)}`}
+                variant="negative"
+              />
+            )}
+            {typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode !== 'show_expense' && (
+              typedShow.results.buyoutItems.map((item, index) => (
                 <BreakdownList.Row
-                  label="Deposit Paid"
-                  value={`−${formatCurrency(typedShow.results.deposit)}`}
+                  key={`buyout-${index}`}
+                  label={item.label}
+                  value={`−${formatCurrency(item.amount)}`}
                   variant="negative"
                 />
+              ))
+            )}
+            {(
+              (typedShow.results.deposit != null && typedShow.results.deposit > 0) ||
+              (typedShow.results.withholdingAmount != null && typedShow.results.withholdingAmount > 0) ||
+              (typedShow.results.totalBuyouts != null && typedShow.results.totalBuyouts > 0 && typedShow.inputs.buyoutMode !== 'show_expense')
+            ) && (
+              <>
+                {typedShow.results.deposit != null && typedShow.results.deposit > 0 && (
+                  <BreakdownList.Row
+                    label="Deposit Paid"
+                    value={`−${formatCurrency(typedShow.results.deposit)}`}
+                    variant="negative"
+                  />
+                )}
                 <BreakdownList.Row
                   label={typedShow.results.balanceDue != null && typedShow.results.balanceDue < 0
                     ? "Overpayment (due back to promoter)"
@@ -391,18 +481,75 @@ export default async function SharedSettlementPage({
                 />
               </>
             )}
+            {typedShow.results.ccFees != null && typedShow.results.ccFees > 0 && typedShow.inputs.ccFeeMode !== 'off_top' && (
+              <BreakdownList.Row
+                label={`CC Processing Fees (${typedShow.inputs.ccFeeRate}%, venue cost)`}
+                value={`−${formatCurrency(typedShow.results.ccFees)}`}
+                variant="negative"
+              />
+            )}
             <BreakdownList.Row
-              label="Promoter/House Settlement"
-              value={formatCurrency(typedShow.results.venuePayout)}
-              variant="warning"
+              label={typedShow.results.venuePayout < 0 ? "Venue Loss" : "Promoter/House Settlement"}
+              value={`${typedShow.results.venuePayout < 0 ? '−' : ''}${formatCurrency(Math.abs(typedShow.results.venuePayout))}`}
+              variant={typedShow.results.venuePayout < 0 ? "warning" : "warning"}
             />
           </BreakdownList>
         </section>
 
+        {typedShow.results.merchGross != null && typedShow.results.merchGross > 0 && (
+          <section className="settlement-section">
+            <h2 className="ds-section-title">Merch Settlement</h2>
+            <BreakdownList>
+              <BreakdownList.Row
+                label="Gross Merch Sales"
+                value={formatCurrency(typedShow.results.merchGross)}
+              />
+              <BreakdownList.Row
+                label={`Venue Merch Cut (${typedShow.inputs.merchVenuePercent || '0'}%)`}
+                value={`−${formatCurrency(typedShow.results.merchVenueCut ?? 0)}`}
+                variant="negative"
+              />
+              <BreakdownList.Row
+                label="Net Merch to Artist"
+                value={formatCurrency(typedShow.results.merchNetToArtist ?? 0)}
+                variant="success"
+              />
+            </BreakdownList>
+          </section>
+        )}
+
+        {typedShow.results.totalDueToArtist != null && (
+          <section className="settlement-section">
+            <h2 className="ds-section-title">Total</h2>
+            <BreakdownList>
+              <BreakdownList.Row
+                label="Show Balance Due"
+                value={formatCurrency(
+                  typedShow.results.deposit != null && typedShow.results.deposit > 0
+                    ? (typedShow.results.balanceDue ?? typedShow.results.artistPayout)
+                    : typedShow.results.artistPayout
+                )}
+              />
+              <BreakdownList.Row
+                label="Net Merch to Artist"
+                value={formatCurrency(typedShow.results.merchNetToArtist ?? 0)}
+              />
+              <BreakdownList.Row
+                label="Total Due to Artist"
+                value={formatCurrency(typedShow.results.totalDueToArtist)}
+                variant="success"
+              />
+            </BreakdownList>
+          </section>
+        )}
+
         {/* Footer */}
         <footer className="ds-card-footer">
           <p className="ds-card-footer-text">
-            Generated on {new Date().toLocaleDateString()} via{" "}
+            {typedShow.results.calculatedAt && (
+              <>Calculated {new Date(typedShow.results.calculatedAt).toLocaleString()} · </>
+            )}
+            Generated via{" "}
             <Link href="/" className="ds-card-footer-link">
               Show Settlement Calculator
             </Link>

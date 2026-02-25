@@ -304,6 +304,44 @@
   }
 }
 
+/* Venue loss */
+.calculator-result-row.venue-loss {
+  background: var(--color-error-bg);
+}
+
+.calculator-result-row.venue-loss .label,
+.calculator-result-row.venue-loss .value {
+  color: var(--color-error);
+}
+
+/* Stale results banner */
+.calculator-stale-banner {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-top: 1.5rem;
+  font-size: var(--text-sm);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning-strong);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Calculation warnings */
+.calculator-warnings {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: var(--text-sm);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning-strong);
+}
+
+.calculator-warnings p {
+  margin: 0.25rem 0;
+}
+
 /* Page header actions */
 .calculator-header-actions {
   display: flex;

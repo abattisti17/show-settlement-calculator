@@ -917,3 +917,83 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - Overage rows only render when deal type includes them, so existing settlements are unchanged.
 **Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
 ---
+
+---
+### 2026-02-25 — Phase 5: Door deal & percentage of gross
+**Context:** Current "Percentage of Net" deducts both tax and expenses before the split. Real-world deals include percentage of gross (no deductions) and door deals (only tax deducted).
+**Decision:** Add two new deal types to cover the remaining percentage-based structures.
+**Changes:**
+- `app/calculator-content.tsx`: Added `percentage_of_gross` and `door_deal` to DealType. percentage_of_gross: `artistPayout = grossRevenue * (percentage / 100)`. door_deal: `artistPayout = (grossRevenue - taxAmount) * (percentage / 100)`. Added Select options with clear labels. Percentage field shown for both. Artist Payout label in results clarifies the basis (e.g., "80% of Gross After Tax"). Consolidated validation for all percentage-only deal types.
+- `app/s/[token]/page.tsx`: Added formatDealType cases. Breakdown labels show the calculation basis for new deal types.
+**Supabase impact:** None.
+**Tradeoffs:**
+- No new form fields needed — both types only require the percentage field.
+- Labels explicitly state what is deducted before the split to prevent confusion.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
+
+---
+### 2026-02-25 — Export to CSV
+**Context:** Users needed a way to export settlement data for bookkeeping, email, or import into accounting software.
+**Decision:** Add a client-side CSV export that mirrors the settlement summary layout.
+**Changes:**
+- `app/calculator-content.tsx`: Added `handleExportCSV()` function that builds two-column CSV (line item, amount) matching the results waterfall. Triggered from a ghost Button in the PageHeader, visible when results exist. File named after the show (e.g., `Summer-Festival-2026-settlement.csv`).
+**Supabase impact:** None.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx`
+
+---
+### 2026-02-25 — Phase 6: Calculation Integrity
+**Context:** Currency calculations used raw floating-point math, leading to potential rounding artifacts. No mechanism to detect or prevent stale results. Venue loss scenarios were not flagged.
+**Decision:** Extract calculation into a pure function with rounding at every step. Add stale-result tracking, warnings for non-numeric input, recalculation on save, `calculatedAt` timestamp, and venue loss UI.
+**Changes:**
+- `app/calculator-content.tsx`: Added `round2()` helper applied to every currency calculation step. Added `warnIfNotNumeric()` to flag fields with non-numeric text that silently fall back to 0. Extracted all calculation logic into pure `computeSettlement(FormData) → ComputeOutput` function (returns result + warnings, or error). `handleCalculate` now delegates to `computeSettlement`, sets warnings and stale state. `handleSaveShow` recalculates from current inputs before saving (guarantees stored results match stored inputs). Added `calculatedAt` ISO timestamp to `CalculationResult`. Added `resultsStale` state that gets set when any input changes after calculation; shows amber banner. Added `warnings` state displayed at top of results card. Venue payout row dynamically styled as "Venue Loss" (error theme) when negative. CSV export updated for venue loss label.
+- `app/s/[token]/page.tsx`: Added `calculatedAt` to Show type. Footer shows "Calculated [datetime]" when available. Venue payout row shows "Venue Loss" label when negative.
+- `app/calculator.css`: Added styles for `.venue-loss`, `.calculator-stale-banner`, `.calculator-warnings`.
+**Supabase impact:** None (calculatedAt stored in existing results JSONB; old shows without it render fine).
+**Tradeoffs:**
+- Chose "invalidate + banner" over auto-recalculate to avoid constant re-computation on keystroke.
+- Recalculation on save means even if displayed results are stale, the saved data is always consistent.
+- `computeSettlement` is a pure module-level function, making it straightforward to unit test in the future.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx app/calculator.css`
+
+---
+### 2026-02-25 — Phase 7: Credit Card Fees & Tax Refinement
+**Context:** CC processing fees (typically 2.9%) were invisible in settlements, and the tax calculation assumed prices always excluded tax.
+**Decision:** Add CC fee rate with a mode toggle (off-the-top vs. venue expense), and a tax-inclusive pricing toggle. Split the "Tax & Expenses" form section into "Tax & Fees" and "Show Expenses" for clarity.
+**Changes:**
+- `app/calculator-content.tsx`: Added `taxMode` ("exclusive"/"inclusive"), `ccFeeRate`, `ccFeeMode` ("expense"/"off_top") to FormData. Added `ccFees` to CalculationResult. In `computeSettlement`: tax-inclusive mode uses `grossRevenue * taxRate / (100 + taxRate)` to back-calculate tax from included prices. CC fees calculated as `grossRevenue * (ccFeeRate / 100)`. "Off the top" mode deducts CC from net (shared cost); "expense" mode deducts from venue payout only (artist split unaffected). Form UI split into two subsections with Select dropdowns for tax mode and CC mode, each with descriptive option labels. Results waterfall shows CC fees after tax (off_top) or after artist payout (expense) with clear labels. CSV export and shared view both updated with CC fees rows and improved tax labels. loadShow backward-compatible (defaults: exclusive tax, no CC fee, expense mode).
+- `app/s/[token]/page.tsx`: Added `taxMode`, `ccFeeRate`, `ccFeeMode` to Show inputs type and `ccFees` to results type. Show Details displays tax mode and CC fee info. Breakdown shows CC fees in correct waterfall position based on mode.
+**Supabase impact:** None (new fields stored in existing inputs/results JSONB).
+**Tradeoffs:**
+- "Off the top" CC fees reduce the net pool for both parties; "expense" mode preserves the artist's split and puts the CC burden on the venue — matches common real-world contractual variations.
+- Tax-inclusive mode uses the standard back-calculation formula, so the displayed tax amount is lower than exclusive mode for the same rate (as expected).
+- Used Select dropdowns (existing component) rather than custom toggles for the mode switches.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
+
+---
+### 2026-02-25 — Phase 8: Merch Settlement
+**Context:** Merch revenue and venue merch cuts are a standard part of live show settlements but were completely missing from the calculator. Artists need to know their total payout across both show and merch.
+**Decision:** Add a merch section to the form and display merch settlement as a clearly separated section in the results (not mixed into the show waterfall). Include a "Total Due to Artist" line that combines show balance due + net merch.
+**Changes:**
+- `app/calculator-content.tsx`: Added `merchGross` and `merchVenuePercent` to FormData. Added `merchGross`, `merchVenueCut`, `merchNetToArtist`, `totalDueToArtist` to CalculationResult. In `computeSettlement`: venue merch cut calculated as `merchGross * (merchVenuePercent / 100)`, net merch is `merchGross - venueCut`, totalDueToArtist is `balanceDue + merchNetToArtist` (only when merch exists). Form has new "Merch (optional)" section with two fields in a row layout. Results display shows merch settlement as a distinct subsection (Gross Sales → Venue Cut → Net to Artist), followed by a "Total" subsection combining show + merch. CSV export includes merch rows. loadShow backward-compatible (defaults to empty strings).
+- `app/s/[token]/page.tsx`: Added merch fields to Show types. Shared view renders "Merch Settlement" and "Total" as separate BreakdownList sections when merch data exists.
+**Supabase impact:** None (new fields stored in existing inputs/results JSONB).
+**Tradeoffs:**
+- Merch section is separate from the show waterfall to prevent confusion about what affects the artist's performance split vs. merch split.
+- Venue merch percentage defaults to empty (not 20%) to avoid assumptions — every deal is different.
+- totalDueToArtist only shown when merch exists; without merch, the existing balance due / artist payout lines are sufficient.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
+
+---
+### 2026-02-25 — Phase 9: Withholding Tax & Buyouts
+**Context:** Non-resident artists often face state withholding tax (e.g., CA 7%, NY 8.82%). Rider buyouts (catering, hotel, production) are standard in touring contracts but had no place in the settlement.
+**Decision:** Add withholding rate + state label fields. Add repeatable buyout items with a mode toggle: "deduct from balance" (venue provided, deducted from artist cash) or "show expense" (reduces net profit for everyone).
+**Changes:**
+- `app/calculator-content.tsx`: Added `BuyoutItem` interface and `COMMON_BUYOUTS` suggestions. Added `withholdingRate`, `withholdingState`, `buyoutItems`, `buyoutMode` to FormData. Added `withholdingAmount`, `withholdingState`, `buyoutItems`, `totalBuyouts` to CalculationResult. In `computeSettlement`: buyouts parsed like expense items. "show_expense" mode adds buyout total to expenses before net calc. Withholding calculated as `artistPayout * (withholdingRate / 100)`. balanceDue now accounts for deposit + withholding + buyout deductions. Form has "Withholding & Buyouts" section with rate/state fields, repeatable buyout rows with datalist, and mode select. Results display shows withholding and buyouts (deduct mode) between Artist Payout and Balance Due. Buyouts (expense mode) appear in the expenses waterfall section. Balance Due section now shown whenever any deductions exist (not just deposit). CSV export includes withholding and buyout rows in correct positions.
+- `app/s/[token]/page.tsx`: Added withholding and buyout fields to Show types. Deal Structure section shows withholding rate/state and buyout handling mode. Breakdown shows withholding and buyout rows in correct waterfall positions based on mode.
+**Supabase impact:** None (new fields stored in existing inputs/results JSONB).
+**Tradeoffs:**
+- "Deduct from balance" is the most common real-world handling (venue provides the item, deducts cost from artist cash payout).
+- "Show expense" mode is for contracts where buyouts reduce the available pool before splits — affects percentage-based deals.
+- Buyout items start with one empty row to signal the feature exists, same pattern as expenses.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
+---
