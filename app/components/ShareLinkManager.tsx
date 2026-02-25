@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 interface ShareLinkManagerProps {
   showId: string;
   showName: string;
+  resultsStale?: boolean;
 }
 
 interface ShareLinkData {
@@ -17,6 +18,7 @@ interface ShareLinkData {
 export default function ShareLinkManager({
   showId,
   showName,
+  resultsStale = false,
 }: ShareLinkManagerProps) {
   const [shareLink, setShareLink] = useState<ShareLinkData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,7 @@ export default function ShareLinkManager({
 
   // Copy link to clipboard
   async function handleCopyLink() {
-    if (!shareLink || !shareLink.token) return;
+    if (!shareLink || !shareLink.token || resultsStale) return;
 
     const fullUrl = `${window.location.origin}/s/${shareLink.token}`;
 
@@ -194,6 +196,8 @@ export default function ShareLinkManager({
                 <button
                   onClick={handleCopyLink}
                   className="share-link-copy-btn"
+                  disabled={resultsStale}
+                  title={resultsStale ? "Recalculate and save before sharing" : undefined}
                 >
                   {copySuccess ? (
                     <svg

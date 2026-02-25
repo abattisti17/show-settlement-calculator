@@ -1,6 +1,33 @@
 # Project History (append-only)
 
 ---
+### 2025-02-25 — Settlement audit roadmap implementation
+**Context:** Execute settlement audit roadmap (Phases 1–5): critical fixes, high-impact, quick wins, server-side recalculation, trust & export.
+**Decision:** Implement all items that do not require schema/migration/RLS changes.
+**Changes:**
+- Phase 1: Show date field (FormData, Input, save/load); overpayment warning in computeSettlement; SharePopover confirmation + disable when stale; ShareLinkManager resultsStale.
+- Phase 2: Balance due callout at top of summary; deal structure plain-language summary (getDealSummary); capacity/comps/negative expense validation.
+- Phase 3: calculatedAt in summary; acknowledgments + show date in CSV; deal type tooltips.
+- Phase 4: lib/settlement/calculate.ts (extract computeSettlement); app/api/shows/save/route.ts; calculator uses API instead of direct Supabase.
+- Phase 5: Print styles for balance-due, overpayment, page-break; optional expected gross reconciliation field.
+**Files:** app/calculator-content.tsx, app/components/SharePopover.tsx, app/components/ShareLinkManager.tsx, app/calculator.css, app/globals.css, lib/settlement/calculate.ts (new), app/api/shows/save/route.ts (new).
+**Supabase impact:** None (same shows table, same RLS).
+**Rollback:** Revert commits; delete lib/settlement/calculate.ts, app/api/shows/save/route.ts.
+---
+### 2025-02-25 — Parts 2–5: Settlement audit (compare, risk, roadmap, stress test)
+**Context:** Complete audit Parts 2–5: compare app to real-world workflow, risk/trust audit, design-system-only roadmap, stress test scenario.
+**Decision:** Document gaps, assumptions, missing validations, costly mistakes, reconciliation risks, UI friction; trust/transparency/audit/export needs; roadmap with critical fixes, high-impact, quick wins, structural, trust/export; stress test $10k guarantee vs 85/15.
+**Changes:** Added `docs/SETTLEMENT_AUDIT_PARTS_2-5.md`.
+**Supabase impact:** None.
+**Rollback:** Delete docs/SETTLEMENT_AUDIT_PARTS_2-5.md.
+---
+### 2025-02-25 — Part 1: Real-world settlement workflow audit
+**Context:** 5-part audit of the settlement app against real-world workflow. Part 1: map the actual end-to-end process from load-in through final payment.
+**Decision:** Create a document mapping roles, documents, calculations, disputes, time-sensitive steps, and late-night behavior.
+**Changes:** Added `docs/SETTLEMENT_REAL_WORLD_WORKFLOW.md` — roles (venue GM, promoter, tour manager, accountant, etc.), documents (deal memo, ticket report, receipts, settlement sheet), manual calculations, dispute zones, time-sensitive steps, fatigue/pressure behaviors.
+**Supabase impact:** None.
+**Rollback:** Delete docs/SETTLEMENT_REAL_WORLD_WORKFLOW.md.
+---
 ### 2026-02-24 — /media as public route (no paywall)
 **Context:** Media page should be public, not behind auth/paywall.
 **Decision:** Add /media to proxy publicMarketingRoutes so unauthenticated users can access it.

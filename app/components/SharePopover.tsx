@@ -7,12 +7,30 @@ import { Popover } from "@/components/ui/Popover";
 import ShareLinkManager from "./ShareLinkManager";
 import { useDashboardToast } from "../dashboard/DashboardToast";
 
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 interface SharePopoverProps {
   showId: string;
   showName: string;
+  resultsStale?: boolean;
+  balanceDue?: number;
+  totalDueToArtist?: number;
 }
 
-export default function SharePopover({ showId, showName }: SharePopoverProps) {
+export default function SharePopover({
+  showId,
+  showName,
+  resultsStale = false,
+  balanceDue,
+  totalDueToArtist,
+}: SharePopoverProps) {
   const [open, setOpen] = useState(false);
   const [copying, setCopying] = useState(false);
   const showToast = useDashboardToast();
@@ -20,6 +38,15 @@ export default function SharePopover({ showId, showName }: SharePopoverProps) {
   async function handleCopyLink(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (resultsStale) return;
+
+    const keyAmount = totalDueToArtist ?? balanceDue ?? 0;
+    const confirmMessage =
+      keyAmount > 0
+        ? `Share "${showName || "this show"}"? Balance due: ${formatCurrency(keyAmount)}`
+        : `Share "${showName || "this show"}"?`;
+    if (!window.confirm(confirmMessage)) return;
+
     setCopying(true);
 
     try {
@@ -79,15 +106,16 @@ export default function SharePopover({ showId, showName }: SharePopoverProps) {
         align="right"
       >
         <div className="share-popover-content">
-          <ShareLinkManager showId={showId} showName={showName} />
+          <ShareLinkManager showId={showId} showName={showName} resultsStale={resultsStale} />
         </div>
       </Popover>
       <Button
         variant="ghost"
         size="sm"
         onClick={handleCopyLink}
-        disabled={copying}
-        aria-label="Copy share link"
+        disabled={copying || resultsStale}
+        aria-label={resultsStale ? "Recalculate and save before sharing" : "Copy share link"}
+        title={resultsStale ? "Recalculate and save before sharing" : undefined}
       >
         <Icon name="link" size={18} />
       </Button>

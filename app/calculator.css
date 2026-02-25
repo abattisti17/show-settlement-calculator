@@ -148,6 +148,19 @@
   font-style: italic;
 }
 
+.calculator-deal-summary {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.calculator-calculated-at {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: 1rem;
+}
+
 /* Save status */
 .calculator-save-status {
   padding: 0.75rem 1rem;

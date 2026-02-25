@@ -457,11 +457,13 @@ body {
 
   .calculator-form-section,
   .calculator-save-status,
+  .calculator-stale-banner,
   .calculator-container .ds-page-header {
     display: none;
   }
 
   .results-card {
+    page-break-inside: avoid;
     background: var(--color-print-panel-bg);
     border-color: var(--color-print-border);
     box-shadow: none;
@@ -505,6 +507,20 @@ body {
   .result-row.venue-payout .label,
   .result-row.venue-payout .value {
     color: var(--color-print-warning-text);
+  }
+
+  .result-row.balance-due {
+    background: var(--color-print-success-bg);
+  }
+
+  .result-row.balance-due .label,
+  .result-row.balance-due .value {
+    color: var(--color-print-success-text);
+  }
+
+  .result-row.overpayment .label,
+  .result-row.overpayment .value {
+    color: var(--color-print-error-text, var(--color-print-text));
   }
 
   .calculator-print-btn {
