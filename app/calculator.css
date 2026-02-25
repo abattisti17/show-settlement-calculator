@@ -122,6 +122,24 @@
   color: var(--color-warning-strong);
 }
 
+.calculator-result-row.balance-due {
+  background: var(--color-success-bg);
+}
+
+.calculator-result-row.balance-due .label,
+.calculator-result-row.balance-due .value {
+  color: var(--color-success-strong);
+}
+
+.calculator-result-row.overpayment {
+  background: var(--color-error-bg);
+}
+
+.calculator-result-row.overpayment .label,
+.calculator-result-row.overpayment .value {
+  color: var(--color-error);
+}
+
 .artist-name-display {
   text-align: center;
   font-size: var(--text-lg);

@@ -15,7 +15,7 @@ import { Icon } from "@/components/ui/Icon";
 import ShareLinkManager from "./components/ShareLinkManager";
 import "./calculator.css";
 
-type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage";
+type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage" | "guarantee_plus_percentage";
 
 interface TicketTier {
   id: string;
@@ -55,6 +55,8 @@ interface FormData {
   dealType: DealType;
   guarantee: string;
   percentage: string;
+  breakeven: string;
+  deposit: string;
 }
 
 interface CalculationResult {
@@ -67,6 +69,10 @@ interface CalculationResult {
   expenseItems?: { label: string; amount: number }[];
   netProfit: number;
   artistPayout: number;
+  overage?: number;
+  breakeven?: number;
+  deposit: number;
+  balanceDue: number;
   venuePayout: number;
 }
 
@@ -107,6 +113,8 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     dealType: "guarantee",
     guarantee: "",
     percentage: "",
+    breakeven: "",
+    deposit: "",
   });
 
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -192,6 +200,8 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             dealType: data.inputs.dealType || 'guarantee',
             guarantee: data.inputs.guarantee || '',
             percentage: data.inputs.percentage || '',
+            breakeven: data.inputs.breakeven || '',
+            deposit: data.inputs.deposit || '',
           });
           setResult(data.results);
           setCurrentShowId(data.id);
@@ -321,10 +331,22 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       return;
     }
 
+    if (
+      formData.dealType === "guarantee_plus_percentage" &&
+      (guarantee <= 0 || percentage <= 0)
+    ) {
+      setErrorMessage("Please enter both guarantee amount and back-end percentage.");
+      setResult(null);
+      return;
+    }
+
     const taxAmount = grossRevenue * (taxRate / 100);
     const netProfit = grossRevenue - taxAmount - totalExpenses;
 
     let artistPayout: number;
+    let overage: number | undefined;
+    let breakevenPoint: number | undefined;
+
     switch (formData.dealType) {
       case "guarantee":
         artistPayout = guarantee;
@@ -332,15 +354,25 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       case "percentage":
         artistPayout = Math.max(0, netProfit * (percentage / 100));
         break;
-      case "guarantee_vs_percentage":
+      case "guarantee_vs_percentage": {
         const percentageShare = Math.max(0, netProfit * (percentage / 100));
         artistPayout = Math.max(guarantee, percentageShare);
         break;
+      }
+      case "guarantee_plus_percentage": {
+        const userBreakeven = parseNumber(formData.breakeven);
+        breakevenPoint = userBreakeven > 0 ? userBreakeven : guarantee + totalExpenses;
+        overage = Math.max(0, (netProfit - breakevenPoint) * (percentage / 100));
+        artistPayout = guarantee + overage;
+        break;
+      }
       default:
         artistPayout = 0;
     }
 
     const venuePayout = netProfit - artistPayout;
+    const deposit = parseNumber(formData.deposit);
+    const balanceDue = artistPayout - deposit;
 
     setResult({
       grossRevenue,
@@ -352,6 +384,10 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       expenseItems: parsedExpenseItems,
       netProfit,
       artistPayout,
+      overage,
+      breakeven: breakevenPoint,
+      deposit,
+      balanceDue,
       venuePayout,
     });
 
@@ -398,6 +434,8 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           dealType: formData.dealType,
           guarantee: formData.guarantee,
           percentage: formData.percentage,
+          breakeven: formData.breakeven,
+          deposit: formData.deposit,
         },
         results: result,
       };
@@ -600,16 +638,44 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             <option value="guarantee">Guarantee</option>
             <option value="percentage">Percentage of Net</option>
             <option value="guarantee_vs_percentage">Guarantee vs Percentage (whichever is higher)</option>
+            <option value="guarantee_plus_percentage">Guarantee + Back-End Percentage</option>
           </Select>
 
           <div className="calculator-form-row">
-            {(formData.dealType === "guarantee" || formData.dealType === "guarantee_vs_percentage") && (
+            {(formData.dealType === "guarantee" || formData.dealType === "guarantee_vs_percentage" || formData.dealType === "guarantee_plus_percentage") && (
               <Input id="guarantee" name="guarantee" label="Guarantee Amount ($)" type="number" value={formData.guarantee} onChange={handleInputChange} placeholder="ex: 1000" min={0} step={0.01} />
             )}
-            {(formData.dealType === "percentage" || formData.dealType === "guarantee_vs_percentage") && (
-              <Input id="percentage" name="percentage" label="Percentage (%)" type="number" value={formData.percentage} onChange={handleInputChange} placeholder="ex: 80" min={0} max={100} step={0.1} />
+            {(formData.dealType === "percentage" || formData.dealType === "guarantee_vs_percentage" || formData.dealType === "guarantee_plus_percentage") && (
+              <Input id="percentage" name="percentage" label={formData.dealType === "guarantee_plus_percentage" ? "Back-End Percentage (%)" : "Percentage (%)"} type="number" value={formData.percentage} onChange={handleInputChange} placeholder="ex: 85" min={0} max={100} step={0.1} />
             )}
           </div>
+          {formData.dealType === "guarantee_plus_percentage" && (
+            <Input
+              id="breakeven"
+              name="breakeven"
+              label="Breakeven Point ($)"
+              type="number"
+              value={formData.breakeven}
+              onChange={handleInputChange}
+              placeholder="Leave blank to auto-calculate"
+              hint="Defaults to guarantee + total expenses if left blank"
+              min={0}
+              step={0.01}
+            />
+          )}
+
+          <Input
+            id="deposit"
+            name="deposit"
+            label="Deposit / Advance Already Paid ($)"
+            type="number"
+            value={formData.deposit}
+            onChange={handleInputChange}
+            placeholder="ex: 500"
+            hint="Amount already wired to the artist before the show"
+            min={0}
+            step={0.01}
+          />
 
           {errorMessage && (
             <div className="calculator-save-status error" style={{ marginTop: "1rem" }}>{errorMessage}</div>
@@ -679,10 +745,40 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 <span className="label">Net</span>
                 <span className="value">{formatCurrency(result.netProfit)}</span>
               </div>
+              {result.overage != null && result.breakeven != null && (
+                <>
+                  <div className="calculator-result-row result-row">
+                    <span className="label">Guarantee</span>
+                    <span className="value">{formatCurrency(result.artistPayout - result.overage)}</span>
+                  </div>
+                  <div className="calculator-result-row result-row">
+                    <span className="label">Breakeven Point</span>
+                    <span className="value">{formatCurrency(result.breakeven)}</span>
+                  </div>
+                  <div className="calculator-result-row result-row">
+                    <span className="label">Back-End Overage</span>
+                    <span className="value">{formatCurrency(result.overage)}</span>
+                  </div>
+                </>
+              )}
               <div className="calculator-result-row result-row highlight artist-payout">
-                <span className="label">Artist Payout</span>
+                <span className="label">Artist Payout{result.overage != null ? ' (Guarantee + Overage)' : ''}</span>
                 <span className="value">{formatCurrency(result.artistPayout)}</span>
               </div>
+              {result.deposit > 0 && (
+                <>
+                  <div className="calculator-result-row result-row">
+                    <span className="label">Deposit Paid</span>
+                    <span className="value">−{formatCurrency(result.deposit)}</span>
+                  </div>
+                  <div className={`calculator-result-row result-row highlight ${result.balanceDue < 0 ? 'overpayment' : 'balance-due'}`}>
+                    <span className="label">
+                      {result.balanceDue < 0 ? 'Overpayment (due back to promoter)' : 'Balance Due at Settlement'}
+                    </span>
+                    <span className="value">{formatCurrency(Math.abs(result.balanceDue))}</span>
+                  </div>
+                </>
+              )}
               <div className="calculator-result-row result-row highlight venue-payout">
                 <span className="label">Promoter/House Settlement</span>
                 <span className="value">{formatCurrency(result.venuePayout)}</span>

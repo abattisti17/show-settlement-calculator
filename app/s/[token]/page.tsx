@@ -36,6 +36,8 @@ interface Show {
     dealType?: string;
     guarantee?: string;
     percentage?: string;
+    breakeven?: string;
+    deposit?: string;
   };
   results: {
     grossRevenue: number;
@@ -47,6 +49,10 @@ interface Show {
     expenseItems?: { label: string; amount: number }[];
     netProfit: number;
     artistPayout: number;
+    overage?: number;
+    breakeven?: number;
+    deposit?: number;
+    balanceDue?: number;
     venuePayout: number;
   };
   created_at: string;
@@ -86,6 +92,8 @@ function formatDealType(dealType: string): string {
       return "Percentage of Net";
     case "guarantee_vs_percentage":
       return "Guarantee vs Percentage (whichever is higher)";
+    case "guarantee_plus_percentage":
+      return "Guarantee + Back-End Percentage";
     default:
       return dealType;
   }
@@ -204,8 +212,20 @@ export default async function SharedSettlementPage({
             )}
             {typedShow.inputs.percentage && (
               <DescriptionList.Item
-                label="Percentage:"
+                label={typedShow.inputs.dealType === "guarantee_plus_percentage" ? "Back-End Percentage:" : "Percentage:"}
                 value={`${typedShow.inputs.percentage}%`}
+              />
+            )}
+            {typedShow.inputs.breakeven && parseFloat(typedShow.inputs.breakeven) > 0 && (
+              <DescriptionList.Item
+                label="Breakeven Point:"
+                value={formatCurrency(parseFloat(typedShow.inputs.breakeven))}
+              />
+            )}
+            {typedShow.inputs.deposit && parseFloat(typedShow.inputs.deposit) > 0 && (
+              <DescriptionList.Item
+                label="Deposit / Advance Paid:"
+                value={formatCurrency(parseFloat(typedShow.inputs.deposit))}
               />
             )}
           </DescriptionList>
@@ -334,11 +354,43 @@ export default async function SharedSettlementPage({
               variant="highlight"
             />
             <BreakdownList.Divider />
+            {typedShow.results.overage != null && typedShow.results.breakeven != null && (
+              <>
+                <BreakdownList.Row
+                  label="Guarantee"
+                  value={formatCurrency(typedShow.results.artistPayout - typedShow.results.overage)}
+                />
+                <BreakdownList.Row
+                  label="Breakeven Point"
+                  value={formatCurrency(typedShow.results.breakeven)}
+                />
+                <BreakdownList.Row
+                  label="Back-End Overage"
+                  value={formatCurrency(typedShow.results.overage)}
+                />
+              </>
+            )}
             <BreakdownList.Row
-              label="Artist Payout"
+              label={typedShow.results.overage != null ? "Artist Payout (Guarantee + Overage)" : "Artist Payout"}
               value={formatCurrency(typedShow.results.artistPayout)}
               variant="success"
             />
+            {typedShow.results.deposit != null && typedShow.results.deposit > 0 && (
+              <>
+                <BreakdownList.Row
+                  label="Deposit Paid"
+                  value={`−${formatCurrency(typedShow.results.deposit)}`}
+                  variant="negative"
+                />
+                <BreakdownList.Row
+                  label={typedShow.results.balanceDue != null && typedShow.results.balanceDue < 0
+                    ? "Overpayment (due back to promoter)"
+                    : "Balance Due at Settlement"}
+                  value={formatCurrency(Math.abs(typedShow.results.balanceDue ?? 0))}
+                  variant={typedShow.results.balanceDue != null && typedShow.results.balanceDue < 0 ? "warning" : "success"}
+                />
+              </>
+            )}
             <BreakdownList.Row
               label="Promoter/House Settlement"
               value={formatCurrency(typedShow.results.venuePayout)}

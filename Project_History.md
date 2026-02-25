@@ -888,3 +888,32 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - ticketPrice and ticketsSold still saved for legacy readers.
 **Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx`
 ---
+
+---
+### 2026-02-25 — Phase 3: Deposit / advance & balance due
+**Context:** Guarantees are rarely paid in full at settlement. Tour managers need to see "balance due tonight" after subtracting the deposit already wired.
+**Decision:** Add deposit field to form and surface Balance Due at Settlement (or Overpayment warning when deposit > artist payout).
+**Changes:**
+- `app/calculator-content.tsx`: Added `deposit` to FormData, `deposit` + `balanceDue` to CalculationResult. Added deposit Input field after Deal Structure. handleCalculate computes balanceDue = artistPayout - deposit. Results show "Deposit Paid" and "Balance Due at Settlement" rows when deposit > 0, with overpayment label when negative. Updated save/load.
+- `app/calculator.css`: Added .balance-due (success colors) and .overpayment (error colors) result row styles.
+- `app/s/[token]/page.tsx`: Updated Show interface for deposit in inputs and results. Deal Structure section shows deposit when present. Breakdown shows Deposit Paid and Balance Due rows with appropriate variants.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Old shows without deposit load with empty deposit field — no data loss, no visual change.
+- Overpayment scenario uses error coloring to make it unmissable.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx`
+---
+
+---
+### 2026-02-25 — Phase 4: Guarantee + back-end overage deal type
+**Context:** "Guarantee plus a percentage of net after a breakeven point" is the most common mid-level touring deal structure and was not supported.
+**Decision:** Add `guarantee_plus_percentage` deal type with optional breakeven field (defaults to guarantee + expenses).
+**Changes:**
+- `app/calculator-content.tsx`: Added `guarantee_plus_percentage` to DealType union. Added `breakeven` to FormData, `overage` + `breakeven` to CalculationResult. Calculation: `artistPayout = guarantee + Math.max(0, (netProfit - breakeven) * (percentage / 100))`. Breakeven defaults to guarantee + totalExpenses when left blank. New Select option, conditional breakeven Input with hint. Results show Guarantee, Breakeven Point, and Back-End Overage rows before the total Artist Payout. Updated save/load.
+- `app/s/[token]/page.tsx`: Updated Show interface, formatDealType, Deal Structure section (shows breakeven and "Back-End Percentage" label), Breakdown section (shows guarantee/breakeven/overage rows when present).
+**Supabase impact:** None.
+**Tradeoffs:**
+- Breakeven auto-calculation (guarantee + expenses) covers the standard case; explicit override available for custom deals.
+- Overage rows only render when deal type includes them, so existing settlements are unchanged.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
+---
