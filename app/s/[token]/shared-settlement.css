@@ -22,7 +22,7 @@
 
 .settlement-ack-entry {
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   margin: 0.25rem 0;
 }
 

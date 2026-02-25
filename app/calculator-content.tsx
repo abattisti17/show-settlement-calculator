@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/ui/AppShell";
@@ -16,6 +16,30 @@ import { computeSettlement, formatCurrency, parseNumber, round2 } from "@/lib/se
 import "./calculator.css";
 
 type DealType = "guarantee" | "percentage" | "guarantee_vs_percentage" | "guarantee_plus_percentage" | "percentage_of_gross" | "door_deal";
+
+const DEAL_TYPE_HELP: Record<DealType, string> = {
+  guarantee: "Flat payout regardless of show performance.",
+  percentage: "Artist receives a percentage of net profit after tax and expenses.",
+  guarantee_vs_percentage:
+    "Artist receives whichever is higher: guarantee or percentage of net.",
+  guarantee_plus_percentage:
+    "Artist receives guarantee plus backend percentage above breakeven.",
+  percentage_of_gross:
+    "Artist receives a percentage of gross ticket revenue before deductions.",
+  door_deal:
+    "Artist receives a percentage of gross after tax, before expenses.",
+};
+
+function sanitizeNonNegative(value: string) {
+  return value.replace(/-/g, "");
+}
+
+function sanitizePercent(value: string) {
+  const cleaned = sanitizeNonNegative(value);
+  const parsed = parseFloat(cleaned);
+  if (!Number.isNaN(parsed) && parsed > 100) return "100";
+  return cleaned;
+}
 
 interface TicketTier {
   id: string;
@@ -150,9 +174,7 @@ export interface CalculatorContentProps {
 function getDealSummary(
   ar: ArtistCalcResult,
   fa: ArtistDeal | undefined,
-  netProfit: number,
-  grossRevenue: number,
-  taxAmount: number
+  netProfit: number
 ): string {
   const pct = fa?.percentage ? parseFloat(fa.percentage) : 0;
   const guar = fa?.guarantee ? parseFloat(fa.guarantee) : 0;
@@ -225,6 +247,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   const [currentShowId, setCurrentShowId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState<string>("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     async function loadShow() {
@@ -374,6 +397,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           });
           setResult(data.results);
           setCurrentShowId(data.id);
+          setHasUnsavedChanges(false);
         }
       } catch (error) {
         console.error('Error loading show:', error);
@@ -383,13 +407,42 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     loadShow();
   }, [searchParams, userId, supabase]);
 
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
   function handleInputChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    const numericFields = new Set([
+      "capacity",
+      "expectedGross",
+      "taxRate",
+      "ccFeeRate",
+      "merchGross",
+    ]);
+    const percentFields = new Set(["merchVenuePercent"]);
+    const rawValue = e.target.value;
+    const value = percentFields.has(name)
+      ? sanitizePercent(rawValue)
+      : numericFields.has(name)
+      ? sanitizeNonNegative(rawValue)
+      : rawValue;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errorMessage) setErrorMessage("");
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function addTicketTier() {
@@ -399,25 +452,33 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ticketTiers: [...prev.ticketTiers, { id, name: "", price: "", sold: "", comps: "" }],
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function removeTicketTier(id: string) {
+    if (!window.confirm("Remove this ticket tier? This cannot be undone.")) return;
     setFormData((prev) => ({
       ...prev,
       ticketTiers: prev.ticketTiers.filter((tier) => tier.id !== id),
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function updateTicketTier(id: string, field: keyof Omit<TicketTier, "id">, value: string) {
+    const safeValue =
+      field === "price" || field === "sold" || field === "comps"
+        ? sanitizeNonNegative(value)
+        : value;
     setFormData((prev) => ({
       ...prev,
       ticketTiers: prev.ticketTiers.map((tier) =>
-        tier.id === id ? { ...tier, [field]: value } : tier
+        tier.id === id ? { ...tier, [field]: safeValue } : tier
       ),
     }));
     if (errorMessage) setErrorMessage("");
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function addExpenseItem() {
@@ -427,25 +488,30 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       expenseItems: [...prev.expenseItems, { id, label: "", amount: "" }],
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function removeExpenseItem(id: string) {
+    if (!window.confirm("Remove this expense line? This cannot be undone.")) return;
     setFormData((prev) => ({
       ...prev,
       expenseItems: prev.expenseItems.filter((item) => item.id !== id),
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function updateExpenseItem(id: string, field: "label" | "amount" | "note", value: string) {
+    const safeValue = field === "amount" ? sanitizeNonNegative(value) : value;
     setFormData((prev) => ({
       ...prev,
       expenseItems: prev.expenseItems.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
+        item.id === id ? { ...item, [field]: safeValue } : item
       ),
     }));
     if (errorMessage) setErrorMessage("");
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function addArtist() {
@@ -455,25 +521,36 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       artists: [...prev.artists, defaultArtist(id)],
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function removeArtist(artistId: string) {
+    if (!window.confirm("Remove this artist and all associated deal inputs?")) return;
     setFormData((prev) => ({
       ...prev,
       artists: prev.artists.filter((a) => a.id !== artistId),
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function updateArtistField(artistId: string, field: string, value: string) {
+    const percentFields = new Set(["percentage", "withholdingRate"]);
+    const numericFields = new Set(["guarantee", "breakeven", "deposit"]);
+    const safeValue = percentFields.has(field)
+      ? sanitizePercent(value)
+      : numericFields.has(field)
+      ? sanitizeNonNegative(value)
+      : value;
     setFormData((prev) => ({
       ...prev,
       artists: prev.artists.map((a) =>
-        a.id === artistId ? { ...a, [field]: value } : a
+        a.id === artistId ? { ...a, [field]: safeValue } : a
       ),
     }));
     if (errorMessage) setErrorMessage("");
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function addArtistBuyoutItem(artistId: string) {
@@ -487,9 +564,11 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ),
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function removeArtistBuyoutItem(artistId: string, buyoutId: string) {
+    if (!window.confirm("Remove this buyout line? This cannot be undone.")) return;
     setFormData((prev) => ({
       ...prev,
       artists: prev.artists.map((a) =>
@@ -499,19 +578,22 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       ),
     }));
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function updateArtistBuyoutItem(artistId: string, buyoutId: string, field: "label" | "amount", value: string) {
+    const safeValue = field === "amount" ? sanitizeNonNegative(value) : value;
     setFormData((prev) => ({
       ...prev,
       artists: prev.artists.map((a) =>
         a.id === artistId
-          ? { ...a, buyoutItems: a.buyoutItems.map((b) => b.id === buyoutId ? { ...b, [field]: value } : b) }
+          ? { ...a, buyoutItems: a.buyoutItems.map((b) => b.id === buyoutId ? { ...b, [field]: safeValue } : b) }
           : a
       ),
     }));
     if (errorMessage) setErrorMessage("");
     if (result) setResultsStale(true);
+    setHasUnsavedChanges(true);
   }
 
   function handleCalculate() {
@@ -533,7 +615,21 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     setWarnings(warnings);
     setResultsStale(false);
     setErrorMessage("");
+    setHasUnsavedChanges(true);
   }
+
+  useEffect(() => {
+    function handleKeyboardCalculate(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
+      event.preventDefault();
+      handleCalculate();
+    }
+
+    window.addEventListener("keydown", handleKeyboardCalculate);
+    return () => {
+      window.removeEventListener("keydown", handleKeyboardCalculate);
+    };
+  });
 
   function handlePrint() {
     window.print();
@@ -763,6 +859,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       }
       setSaveStatus('success');
       setSaveMessage(currentShowId ? 'Show updated successfully!' : 'Show saved successfully!');
+      setHasUnsavedChanges(false);
       setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
     } catch (error) {
       console.error('Error saving show:', error);
@@ -770,6 +867,33 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
       setSaveMessage('Failed to save show. Please try again.');
       setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
     }
+  }
+
+  const liveInputWarnings = useMemo(() => {
+    const items: string[] = [];
+    const capacity = parseNumber(formData.capacity);
+    const totalSold = formData.ticketTiers.reduce((sum, tier) => sum + parseNumber(tier.sold), 0);
+    if (capacity > 0 && totalSold > capacity) {
+      items.push(`Tickets sold (${totalSold}) is above venue capacity (${capacity}).`);
+    }
+    for (const tier of formData.ticketTiers) {
+      const sold = parseNumber(tier.sold);
+      const comps = parseNumber(tier.comps);
+      if (comps > sold) {
+        items.push(`${tier.name || "Tier"} has more comps than sold tickets.`);
+      }
+    }
+    return items;
+  }, [formData.capacity, formData.ticketTiers]);
+
+  function handleBackToDashboard() {
+    if (hasUnsavedChanges) {
+      const shouldLeave = window.confirm(
+        "You have unsaved changes. Leave this page and lose unsaved edits?"
+      );
+      if (!shouldLeave) return;
+    }
+    router.push("/dashboard");
   }
 
   return (
@@ -781,7 +905,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     >
       <div className="calculator-container">
         <Button
-          onClick={() => router.push('/dashboard')}
+          onClick={handleBackToDashboard}
           variant="ghost"
           size="sm"
           style={{ marginBottom: "1rem" }}
@@ -802,12 +926,12 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 )}
                 <Button
                   onClick={handleSaveShow}
-                  disabled={!result || saveStatus === 'saving' || (currentShowId != null && !resultsStale)}
+                  disabled={!result || saveStatus === 'saving'}
                   variant="primary"
                   size="sm"
                   loading={saveStatus === 'saving'}
                 >
-                  {currentShowId ? 'Update Show' : 'Save Show'}
+                  {currentShowId ? 'Update Settlement' : 'Save Settlement'}
                 </Button>
               </div>
               {currentShowId && result && (
@@ -816,8 +940,6 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                     showId={currentShowId}
                     showName={formData.showName}
                     resultsStale={resultsStale}
-                    balanceDue={result.balanceDue}
-                    totalDueToArtist={result.totalDueToArtist}
                   />
                 </div>
               )}
@@ -828,6 +950,12 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
         {saveMessage && (
           <div className={`calculator-save-status ${saveStatus === 'success' ? 'success' : 'error'}`}>
             {saveMessage}
+          </div>
+        )}
+
+        {result && resultsStale && (
+          <div className="calculator-stale-banner calculator-stale-banner-prominent">
+            Results are out of date. Recalculate before sharing or finalizing payout.
           </div>
         )}
 
@@ -881,7 +1009,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                     aria-label={`Remove ${tier.name || "tier"}`}
                     className="calculator-tier-remove"
                   >
-                    ×
+                    × Remove
                   </Button>
                 )}
               </div>
@@ -904,29 +1032,29 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           <Input
             id="expectedGross"
             name="expectedGross"
-            label="Expected gross from ticket report ($)"
+            label="Ticket report gross check ($)"
             type="number"
             value={formData.expectedGross}
             onChange={handleInputChange}
-            placeholder="Optional: verify against ticket report"
+            placeholder="Optional: paste gross from your ticketing report"
             min={0}
             step={0.01}
-            hint="If provided, a warning appears when calculated gross differs"
+            hint="Use this to quickly catch payout math mismatches."
           />
 
           <h3 className="calculator-section-title">Tax & Fees</h3>
           <div className="calculator-form-row">
             <Input id="taxRate" name="taxRate" label="Entertainment / Sales Tax (%)" type="number" value={formData.taxRate} onChange={handleInputChange} placeholder="ex: 10" min={0} max={100} step={0.1} hint="Amusement tax, sales tax, or venue tax rate" />
-            <Select id="taxMode" name="taxMode" label="Tax Handling" value={formData.taxMode} onChange={handleInputChange}>
+            <Select id="taxMode" name="taxMode" label="Tax Treatment" value={formData.taxMode} onChange={handleInputChange}>
               <option value="exclusive">Tax added on top of ticket price</option>
               <option value="inclusive">Ticket prices already include tax</option>
             </Select>
           </div>
           <div className="calculator-form-row">
             <Input id="ccFeeRate" name="ccFeeRate" label="CC Processing Fee (%)" type="number" value={formData.ccFeeRate} onChange={handleInputChange} placeholder="ex: 2.9" min={0} max={100} step={0.01} hint="Credit card / payment processing rate" />
-            <Select id="ccFeeMode" name="ccFeeMode" label="CC Fee Handling" value={formData.ccFeeMode} onChange={handleInputChange}>
-              <option value="expense">Venue expense (does not reduce artist split)</option>
-              <option value="off_top">Deducted from gross (shared cost)</option>
+            <Select id="ccFeeMode" name="ccFeeMode" label="Card Fee Treatment" value={formData.ccFeeMode} onChange={handleInputChange}>
+              <option value="expense">Venue-only cost (does not reduce artist deal)</option>
+              <option value="off_top">Deduct before artist split (shared impact)</option>
             </Select>
           </div>
 
@@ -958,7 +1086,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                     aria-label={`Remove ${item.label || "expense"}`}
                     className="calculator-expense-remove"
                   >
-                    ×
+                    × Remove
                   </Button>
                 )}
                 {(item.label.trim() || parseNumber(item.amount) > 0) && (
@@ -1019,6 +1147,9 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 <option value="percentage_of_gross" title="Artist receives a percentage of gross revenue (before expenses)">Percentage of Gross (before deductions)</option>
                 <option value="door_deal" title="Artist receives a percentage of gross after tax (no expenses deducted)">Door Deal (% of gross after tax)</option>
               </Select>
+              <p className="ds-input-hint calculator-field-help">
+                {DEAL_TYPE_HELP[artist.dealType]}
+              </p>
 
               <div className="calculator-form-row">
                 {(artist.dealType === "guarantee" || artist.dealType === "guarantee_vs_percentage" || artist.dealType === "guarantee_plus_percentage") && (
@@ -1099,7 +1230,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                         aria-label={`Remove ${item.label || "buyout"}`}
                         className="calculator-expense-remove"
                       >
-                        ×
+                        × Remove
                       </Button>
                     )}
                   </div>
@@ -1114,12 +1245,12 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 </Button>
               </div>
               <Select
-                label="Buyout Handling"
+                label="Buyout Treatment"
                 value={artist.buyoutMode}
                 onChange={(e) => updateArtistField(artist.id, "buyoutMode", e.target.value)}
               >
-                <option value="deduct_from_balance">Deduct from artist balance (venue provided these)</option>
-                <option value="show_expense">Treat as show expense (reduces net profit)</option>
+                <option value="deduct_from_balance">Deduct from artist payout (venue covered these costs)</option>
+                <option value="show_expense">Treat as show expense (reduces net before payout)</option>
               </Select>
             </div>
           ))}
@@ -1136,6 +1267,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
               onChange={(e) => {
                 setFormData((prev) => ({ ...prev, notes: e.target.value }));
                 if (result) setResultsStale(true);
+                setHasUnsavedChanges(true);
               }}
               placeholder="General settlement notes, disputes, or special terms&#10;e.g., &quot;Artist provided own sound engineer — $200 credit applied&quot;"
               rows={3}
@@ -1175,25 +1307,27 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             <div className="calculator-save-status error" style={{ marginTop: "1rem" }}>{errorMessage}</div>
           )}
 
-          <Button type="button" variant="primary" size="lg" onClick={handleCalculate} style={{ width: "100%", marginTop: "1rem" }}>
-            Calculate Settlement
+          {liveInputWarnings.length > 0 && (
+            <div className="calculator-warnings" aria-live="polite">
+              {liveInputWarnings.map((warning, index) => (
+                <p key={index}>{warning}</p>
+              ))}
+            </div>
+          )}
+
+          <Button type="button" variant="primary" size="lg" onClick={handleCalculate} className="calculator-calculate-btn">
+            Calculate Settlement (Ctrl/Cmd + Enter)
           </Button>
         </Card>
 
-        {result && resultsStale && (
-          <div className="calculator-stale-banner">
-            Inputs have changed since last calculation. Recalculate to update results.
-          </div>
-        )}
-
         {result && (
-          <section className="results-section" style={{ marginTop: "2rem" }}>
+          <section className="results-section" style={{ marginTop: "2rem" }} aria-live="polite">
             <Card className="results-card" variant="elevated" padding="lg">
               <h2>Settlement Summary</h2>
               {(result.totalDueToArtist != null || result.balanceDue != null) && (
                 <div className="calculator-result-row result-row highlight balance-due balance-due-callout">
                   <span className="label">
-                    {(result.artists || []).length > 1 ? "Total balance due" : "Pay tonight"}
+                    Amount due tonight
                   </span>
                   <span className="value">
                     {formatCurrency(result.totalDueToArtist ?? result.balanceDue ?? 0)}
@@ -1300,7 +1434,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                       <h3 className="calculator-section-title" style={{ marginTop: "1.5rem" }}>{ar.artistName}</h3>
                     )}
                     <p className="calculator-deal-summary">
-                      {getDealSummary(ar, fa, result.netProfit, result.grossRevenue, result.taxAmount)}
+                      {getDealSummary(ar, fa, result.netProfit)}
                     </p>
                     {ar.overage != null && ar.breakeven != null && (
                       <>

@@ -1,6 +1,5 @@
 # Project History (append-only)
 
----
 ### 2025-02-25 — Settlement audit roadmap implementation
 **Context:** Execute settlement audit roadmap (Phases 1–5): critical fixes, high-impact, quick wins, server-side recalculation, trust & export.
 **Decision:** Implement all items that do not require schema/migration/RLS changes.
@@ -1071,4 +1070,23 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - Per-expense notes only appear when the expense row has content (label or amount), keeping the form clean for empty rows.
 - No authentication for acknowledging — deliberate choice matching the roadmap's "link-based access" requirement.
 **Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx app/s/\[token\]/shared-settlement.css app/s/\[token\]/actions.ts app/s/\[token\]/AcknowledgeForm.tsx app/dashboard/page.tsx`
+---
+
+---
+### 2026-02-25 — Usability Hardening (Roadmap Part 4)
+**Context:** The usability audit identified high-risk settlement workflow issues for late-night, high-pressure usage (stale outputs, ambiguous labels, weak safeguards, and DS inconsistency).
+**Decision:** Prioritize risk reduction and clarity improvements first, while refactoring toward existing design-system components instead of introducing new visual styles.
+**Changes:**
+- `app/calculator-content.tsx`: Added unsaved-change safeguards (`beforeunload` + guarded dashboard navigation), confirmation prompts for destructive row removals (tiers, expenses, artists, buyouts), non-negative numeric sanitization, percentage caps, keyboard shortcut for calculation (`Ctrl/Cmd + Enter`), live pre-calc warnings for ticket/capacity mismatches, stronger stale-results warning placement, clearer settlement microcopy (tax/card-fee/buyout labels), visible deal-type helper text, and consistent top summary label (`Amount due tonight`). Save action now stays enabled whenever results exist (except while saving), and save button copy now reflects settlement terminology.
+- `app/components/SharePopover.tsx`: Removed duplicate icon-only quick-copy control and blocking confirm flow, keeping a single clear Share entry point via popover.
+- `app/components/ShareLinkManager.tsx`: Refactored raw controls to existing design-system `Button` and `Input` components, improved sharing copy, added stale-results warning in share panel, and standardized loading/disabled interaction states.
+- `app/calculator.css`: Added styles for prominent stale banner, sticky calculate action, deal helper text spacing, and replaced undefined token usage with existing DS tokens.
+- `app/s/[token]/shared-settlement.css`, `app/dashboard/DashboardToast.css`: Replaced undefined color-token usage with existing DS token equivalents.
+- `components/ui/Popover.css`: Added focus-visible affordance using `:focus-within` for better keyboard focus clarity on popover triggers.
+- `app/login/login.css`, `app/dashboard/dashboard.css`: Standardized primary hover lift to align with DS interaction feel.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Destructive-action confirmations currently use native confirm dialogs for speed and low implementation risk; custom in-app confirmations can replace these later.
+- Numeric sanitization now blocks negative entry at input-time; stricter field-by-field validation rules can be layered in future without schema changes.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/components/SharePopover.tsx app/components/ShareLinkManager.tsx app/calculator.css app/s/\[token\]/shared-settlement.css app/dashboard/DashboardToast.css components/ui/Popover.css app/login/login.css app/dashboard/dashboard.css Project_History.md`
 ---
