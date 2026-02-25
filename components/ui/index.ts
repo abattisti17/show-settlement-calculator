@@ -27,3 +27,17 @@ export type { SegmentedControlProps, SegmentedControlOption } from "./SegmentedC
 
 export { ThemeToggle } from "./ThemeToggle";
 export type { ThemeMode } from "./ThemeToggle";
+
+export { DescriptionList, DescriptionListItem } from "./DescriptionList";
+export type { DescriptionListProps, DescriptionListItemProps } from "./DescriptionList";
+
+export {
+  BreakdownList,
+  BreakdownListRow,
+  BreakdownListDivider,
+} from "./BreakdownList";
+export type {
+  BreakdownRowVariant,
+  BreakdownListProps,
+  BreakdownListRowProps,
+} from "./BreakdownList";

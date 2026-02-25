@@ -750,3 +750,32 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 **Supabase impact:** None. Pricing logic and Stripe integration unchanged.
 **Rollback:** Revert app/pricing/page.tsx and app/pricing/pricing.css.
 ---
+
+---
+### 2026-02-24 — CSS dead-class cleanup + token enforcement pass
+**Context:** After migrating pages to dsys components, a final cleanup pass was requested to remove dead selectors, enforce token usage, and verify build status.
+**Decision:** Remove only definitely-unused selectors from the requested page CSS files, enforce token-based color/radius/font-size usage, and expand the design-system page to represent newly used components.
+**Changes:**
+- `app/globals.css`:
+  - Removed dead legacy selectors/rules (`.btn-primary`, `.btn-ghost`, `.save-show-btn*`, `.dashboard-link-btn*`, `.logout-btn*`, `.print-btn`, `.surface-card`, `.input-field`, `.container`, `.user-header*`, `.header*`, `.section`, `.section-title`, `.form-row`, `.calculate-btn*`, `.loading-state`, `.paywall`, `.paywall-features`, `.paywall-feature*`, `.paywall-btn*`, `.save-status-message*`, `.footer-section*`, `.footer-content`, `.footer-photo`, `.footer-text*`, `.footer-email*`, `.footer-cheers`, `.calculator-footer-section`).
+  - Added `--color-on-primary`, `--radius-full`, and print palette variables (`--color-print-*`), then replaced hardcoded print hex values with variable references.
+  - Converted `.share-link-status-dot` radius to `var(--radius-full)`.
+- `app/landing.css`:
+  - Removed dead nav/legacy selectors (`.landing-nav*`) and unused blocks (`.landing-security*`, `.landing-steps*`, `.landing-step-icon`), plus related mobile/media overrides.
+  - Converted `.landing-step-number` radius to `var(--radius-full)`.
+- `app/dashboard/dashboard.css`:
+  - Removed dead selectors (`.dashboard-intro`, `.subscription-status*`, `.status-badge`, `.status-description`, `.cancel-notice`, `.dashboard-top-header`, `.dashboard-title-section*`, `.dashboard-footer*`, `.subscription-info-compact`, `.action-btn.primary:hover`).
+  - Replaced raw `font-size: 2rem` with tokenized `var(--text-3xl)`.
+- `app/pricing/pricing.css`: Replaced badge text color `#fff` with `var(--color-on-primary)`.
+- `components/ui/Button.css`, `ThemeToggle.css`, `SegmentedControl.css`, `Badge.css`, `AuthorCard.css`:
+  - Replaced hardcoded `#fff` with `var(--color-on-primary)`.
+  - Replaced `50%`/`999px` radii with `var(--radius-full)`.
+- `app/design-system/page.tsx`:
+  - Added sticky top-right floating `ThemeToggle`.
+  - Added demos for `SegmentedControl`, `DescriptionList`, and `BreakdownList`.
+**Supabase impact:** None.
+**Tradeoffs:**
+- Print palette now routes through variables for consistency and policy compliance.
+- Some removed legacy selectors may no longer be available for ad-hoc experiments outside current TSX usage.
+**Rollback:** Revert this commit’s touched CSS files plus `app/design-system/page.tsx` and this Project_History entry.
+---

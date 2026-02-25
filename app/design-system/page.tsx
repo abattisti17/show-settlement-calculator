@@ -12,6 +12,9 @@ import { SectionFooter } from "@/components/ui/SectionFooter";
 import { AuthorCard } from "@/components/ui/AuthorCard";
 import { Icon } from "@/components/ui/Icon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { DescriptionList } from "@/components/ui/DescriptionList";
+import { BreakdownList } from "@/components/ui/BreakdownList";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -109,8 +112,31 @@ function PopoverDemo() {
 }
 
 export default function DesignSystemPage() {
+  const [segValue, setSegValue] = useState("signin");
+
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "2rem 1.5rem" }}>
+      <div
+        style={{
+          position: "sticky",
+          top: "1rem",
+          zIndex: 20,
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "1rem",
+        }}
+      >
+        <Card
+          padding="sm"
+          style={{
+            width: 280,
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <ThemeToggle />
+        </Card>
+      </div>
+
       <PageHeader
         title="Design System"
         description="Living style guide — every component in every variant."
@@ -342,13 +368,44 @@ export default function DesignSystemPage() {
       </Section>
 
       {/* ThemeToggle */}
-      <Section title="ThemeToggle">
-        <Row label="System / Light / Dark (persists in localStorage)">
-          <ThemeToggle />
+      <Section title="SegmentedControl">
+        <Row label="Auth mode">
+          <div style={{ width: 320, maxWidth: "100%" }}>
+            <SegmentedControl
+              value={segValue}
+              onChange={setSegValue}
+              options={[
+                { value: "signin", label: "Sign In" },
+                { value: "signup", label: "Sign Up" },
+              ]}
+            />
+          </div>
         </Row>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: "0.5rem" }}>
-          Used in account dropdown. Respects prefers-color-scheme when &quot;System&quot; is selected.
-        </p>
+      </Section>
+
+      <Section title="DescriptionList">
+        <Card padding="md">
+          <DescriptionList>
+            <DescriptionList.Item label="Show Name:" value="mcr revival show" />
+            <DescriptionList.Item label="Artist:" value="my chemical romance" />
+            <DescriptionList.Item label="Tickets Sold:" value="500" />
+            <DescriptionList.Item label="Tax Rate:" value="15%" />
+          </DescriptionList>
+        </Card>
+      </Section>
+
+      <Section title="BreakdownList">
+        <Card padding="md">
+          <BreakdownList>
+            <BreakdownList.Row label="Gross Revenue" value="$125,000.00" />
+            <BreakdownList.Row label="Tax" value="-$18,750.00" variant="negative" />
+            <BreakdownList.Row label="Expenses" value="-$999.97" variant="negative" />
+            <BreakdownList.Row label="Net Profit" value="$105,250.03" variant="highlight" />
+            <BreakdownList.Divider />
+            <BreakdownList.Row label="Artist Payout" value="$49.88" variant="success" />
+            <BreakdownList.Row label="Promoter/House Settlement" value="$105,200.15" variant="warning" />
+          </BreakdownList>
+        </Card>
       </Section>
 
       {/* PageHeader */}

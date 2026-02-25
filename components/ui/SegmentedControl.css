@@ -28,6 +28,6 @@
 
 .ds-seg .ds-seg-option.active {
   background: var(--gradient-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   box-shadow: 0 4px 12px var(--color-accent-border);
 }

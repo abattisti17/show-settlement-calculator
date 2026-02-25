@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { MarketingShell } from "@/components/ui/MarketingShell";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Custom 404 page for invalid/inactive share links
@@ -6,8 +8,9 @@ import Link from "next/link";
  */
 export default function NotFound() {
   return (
-    <main className="settlement-packet-container">
-      <div className="settlement-not-found">
+    <MarketingShell>
+      <main className="settlement-packet-container">
+        <Card className="settlement-not-found" variant="default" padding="lg">
         <div className="settlement-not-found-icon">
           <svg
             width="64"
@@ -27,11 +30,12 @@ export default function NotFound() {
           This settlement link is invalid or has been deactivated by the owner.
         </p>
         <div className="settlement-not-found-actions">
-          <Link href="/" className="settlement-not-found-btn">
+          <Button as="a" href="/" variant="primary">
             Create Your Own Settlement
-          </Link>
+          </Button>
         </div>
-      </div>
-    </main>
+      </Card>
+      </main>
+    </MarketingShell>
   );
 }

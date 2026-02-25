@@ -1,0 +1,2 @@
+/* Shared settlement page: breakdown uses theme (var(--color-dark-panel)) so it respects dark mode. */
+/* Print keeps light breakdown via globals.css @media print .ds-breakdown */

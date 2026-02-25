@@ -1,0 +1,84 @@
+.ds-breakdown {
+  background: var(--color-dark-panel);
+  padding: 1.25rem 1.25rem 2rem 1.25rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+}
+
+.ds-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ds-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+}
+
+.ds-breakdown-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.ds-breakdown-value {
+  color: var(--color-text-strong);
+  font-size: var(--text-base);
+  font-weight: 600;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Negative (e.g. deductions) */
+.ds-breakdown-row--negative .ds-breakdown-value {
+  color: var(--color-error);
+}
+
+/* Highlight (e.g. net row) */
+.ds-breakdown-row--highlight {
+  background: var(--color-accent-bg);
+  border-color: var(--color-accent-border);
+}
+
+.ds-breakdown-row--highlight .ds-breakdown-label {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.ds-breakdown-row--highlight .ds-breakdown-value {
+  color: var(--color-accent);
+  font-size: var(--text-lg);
+}
+
+/* Success (e.g. artist payout) */
+.ds-breakdown-row--success {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.ds-breakdown-row--success .ds-breakdown-label,
+.ds-breakdown-row--success .ds-breakdown-value {
+  color: var(--color-success-strong);
+}
+
+/* Warning (e.g. venue payout) */
+.ds-breakdown-row--warning {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+
+.ds-breakdown-row--warning .ds-breakdown-label,
+.ds-breakdown-row--warning .ds-breakdown-value {
+  color: var(--color-warning-strong);
+}
+
+.ds-breakdown-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.375rem 0;
+}

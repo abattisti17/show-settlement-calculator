@@ -29,6 +29,7 @@
   --color-text-strong: #fff;
   --color-text-muted: #a0aec0;
   --color-text-faint: #4a5568;
+  --color-on-primary: #fff;
 
   /* Accent — purple */
   --color-accent: #b794f4;
@@ -76,6 +77,21 @@
   --radius-lg: 10px;
   --radius-xl: 12px;
   --radius-2xl: 16px;
+  --radius-full: 999px;
+
+  /* Print palette */
+  --color-print-bg: #fff;
+  --color-print-text: #000;
+  --color-print-border: #ddd;
+  --color-print-muted: #666;
+  --color-print-label: #333;
+  --color-print-accent: #6d28d9;
+  --color-print-panel-bg: #f9f9f9;
+  --color-print-highlight-bg: #f3eeff;
+  --color-print-success-bg: #e6ffed;
+  --color-print-success-text: #276749;
+  --color-print-warning-bg: #feebc8;
+  --color-print-warning-text: #c05621;
 
   /* Typography scale */
   --text-xs: 0.75rem;
@@ -196,78 +212,49 @@
 /* Shared Utilities */
 /* ============================================ */
 
-.btn-primary,
-.save-show-btn,
-.calculate-btn,
-.paywall-btn,
 .share-link-btn-primary,
-.settlement-not-found-btn,
 .create-show-btn,
 .create-show-btn-large,
-.auth-submit-btn,
-.action-btn.primary {
+.auth-submit-btn {
   background: var(--gradient-primary);
   color: var(--color-text-strong);
   border: none;
 }
 
-.btn-primary:hover,
-.save-show-btn:hover:not(:disabled),
-.share-link-btn-primary:hover,
-.settlement-not-found-btn:hover {
+.share-link-btn-primary:hover {
   box-shadow: var(--shadow-primary-sm);
 }
 
-.calculate-btn:hover,
-.paywall-btn:hover,
 .create-show-btn:hover,
 .create-show-btn-large:hover,
-.auth-submit-btn:hover:not(:disabled),
-.action-btn.primary:hover {
+.auth-submit-btn:hover:not(:disabled) {
   box-shadow: var(--shadow-primary-lg);
 }
 
-.btn-ghost,
-.dashboard-link-btn,
-.logout-btn,
-.print-btn,
-.share-link-toggle-btn,
-.action-btn.secondary {
+.share-link-toggle-btn {
   background: transparent;
   color: var(--color-text-muted);
   border: 1px solid var(--color-border-strong);
 }
 
-.btn-ghost:hover,
-.dashboard-link-btn:hover,
-.logout-btn:hover,
-.print-btn:hover,
-.share-link-toggle-btn:hover:not(:disabled),
-.action-btn.secondary:hover {
+.share-link-toggle-btn:hover:not(:disabled) {
   background: var(--color-surface-strong);
   color: var(--color-text-strong);
 }
 
-.surface-card,
 .results-card,
 .paywall-card,
 .share-link-manager,
 .share-link-status,
 .share-link-inactive-message,
-.settlement-packet-content,
-.settlement-not-found,
 .dashboard-card,
-.subscription-status,
 .pricing-info,
-.dashboard-top-header,
 .show-card,
-.dashboard-footer,
 .auth-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
 }
 
-.input-field,
 .form-group input,
 .form-group select,
 .share-link-input {
@@ -288,150 +275,6 @@ body {
 /* CALCULATOR (legacy - see CALCULATOR_MIGRATION.md) */
 /* Many classes below are dead for calculator; kept for print/other pages. */
 /* ============================================ */
-
-/* Main container - centered with max width */
-.container {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-
-/* User header styles */
-.user-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  margin-bottom: 2rem;
-}
-
-.user-header-left {
-  display: flex;
-  align-items: center;
-}
-
-.user-header .user-email {
-  color: var(--color-accent);
-  font-size: var(--text-sm);
-  font-family: var(--font-geist-mono), monospace;
-}
-
-.user-header-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.save-show-btn {
-  padding: 0.625rem 1.25rem;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
-  white-space: nowrap;
-}
-
-.save-show-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.save-show-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.save-show-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.dashboard-link-btn {
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  white-space: nowrap;
-}
-
-.dashboard-link-btn:hover {
-}
-
-.logout-btn {
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  white-space: nowrap;
-}
-
-.logout-btn:hover {
-}
-
-@media (max-width: 768px) {
-  .user-header {
-    flex-direction: column;
-    gap: 0.75rem;
-    text-align: center;
-  }
-
-  .user-header-actions {
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-  }
-
-  .save-show-btn,
-  .dashboard-link-btn,
-  .logout-btn {
-    flex: 1;
-    min-width: 140px;
-  }
-}
-
-/* Header styles */
-.header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.header h1 {
-  font-size: var(--text-4xl);
-  font-weight: 700;
-  color: var(--color-text-strong);
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.02em;
-}
-
-.header p {
-  color: var(--color-text-muted);
-  font-size: var(--text-lg);
-}
-
-/* Section styles */
-.section {
-  margin-bottom: 2rem;
-}
-
-.section-title {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-accent);
-  margin-bottom: 1rem;
-}
 
 /* Form styles */
 .form-group {
@@ -479,40 +322,6 @@ body {
 .form-group select option {
   background: var(--color-bg-1);
   color: var(--color-text-strong);
-}
-
-/* Two-column layout for deal inputs */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-@media (max-width: 500px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Calculate button */
-.calculate-btn {
-  width: 100%;
-  padding: 1rem;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  margin-top: 0.5rem;
-}
-
-.calculate-btn:hover {
-  transform: translateY(-2px);
-}
-
-.calculate-btn:active {
-  transform: translateY(0);
 }
 
 /* Results card */
@@ -593,39 +402,6 @@ body {
   color: var(--color-warning-strong);
 }
 
-/* Print button */
-.print-btn {
-  width: 100%;
-  padding: 0.85rem;
-  font-size: var(--text-base);
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  margin-top: 1.25rem;
-}
-
-.print-btn:hover {
-}
-
-/* Loading state */
-.loading-state {
-  text-align: center;
-  padding: 4rem 1.5rem;
-  color: var(--color-text-muted);
-  font-size: var(--text-lg);
-}
-
-/* Paywall */
-.paywall {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  padding: 2rem 1.5rem;
-}
-
 .paywall-card {
   border-radius: var(--radius-2xl);
   padding: 2.5rem;
@@ -650,48 +426,6 @@ body {
   margin-bottom: 2rem;
 }
 
-.paywall-features {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  text-align: left;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  border-radius: var(--radius-xl);
-}
-
-.paywall-feature {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: var(--color-text);
-  font-size: var(--text-base);
-}
-
-.paywall-feature svg {
-  flex-shrink: 0;
-  color: var(--color-success);
-}
-
-.paywall-btn {
-  width: 100%;
-  padding: 1rem;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.paywall-btn:hover {
-  transform: translateY(-2px);
-}
-
-.paywall-btn:active {
-  transform: translateY(0);
-}
-
 /* Validation error message */
 .error-message {
   background: var(--color-error-bg);
@@ -703,29 +437,6 @@ body {
   font-size: var(--text-sm);
 }
 
-/* Save status messages */
-.save-status-message {
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
-  font-size: var(--text-sm);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.save-status-message.success {
-  background: var(--color-success-bg);
-  border: 1px solid var(--color-success-border);
-  color: var(--color-success-strong);
-}
-
-.save-status-message.error {
-  background: var(--color-error-bg);
-  border: 1px solid var(--color-error-border);
-  color: var(--color-error);
-}
-
 /* Artist name display in results */
 .artist-name-display {
   text-align: center;
@@ -735,104 +446,13 @@ body {
   font-style: italic;
 }
 
-/* Footer section */
-.footer-section {
-  background: var(--color-dark-panel);
-  margin-top: 4rem;
-  padding: 2.5rem 1.5rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.footer-content {
-  max-width: 720px;
-  margin: 0 auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-}
-
-.footer-photo {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--color-input-border);
-  flex-shrink: 0;
-}
-
-.footer-text {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  line-height: 1.7;
-}
-
-.footer-text p {
-  margin: 0;
-}
-
-.footer-email {
-  margin-top: 0.75rem !important;
-}
-
-.footer-email a {
-  color: var(--color-accent);
-  text-decoration: none;
-  margin-left: 0.25rem;
-  transition: color 0.2s;
-}
-
-.footer-email a:hover {
-  color: var(--color-accent-strong);
-}
-
-.footer-cheers {
-  margin-top: 0.5rem !important;
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-@media (max-width: 500px) {
-  .footer-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-}
-
 /* Print styles - only show results when printing */
 @media print {
 body {
-    background: #fff;
-    color: #000;
+    background: var(--color-print-bg);
+    color: var(--color-print-text);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  .container {
-    max-width: 100%;
-    padding: 1rem;
-  }
-
-  .header {
-    border-bottom-color: #ddd;
-  }
-
-  .header h1 {
-    color: #000;
-    font-size: var(--text-3xl);
-  }
-
-  .header p {
-    color: #666;
-  }
-
-  /* Hide input section, header, and non-results when printing */
-  .section:not(.results-section) {
-    display: none;
   }
 
   .calculator-form-section,
@@ -842,62 +462,59 @@ body {
   }
 
   .results-card {
-    background: #f9f9f9;
-    border-color: #ddd;
+    background: var(--color-print-panel-bg);
+    border-color: var(--color-print-border);
     box-shadow: none;
   }
 
   .results-card h2 {
-    color: #000;
-    border-bottom-color: #ddd;
+    color: var(--color-print-text);
+    border-bottom-color: var(--color-print-border);
   }
 
   .result-row .label {
-    color: #333;
+    color: var(--color-print-label);
   }
 
   .result-row .value {
-    color: #000;
+    color: var(--color-print-text);
   }
 
   .result-row.highlight {
-    background: #f3eeff;
+    background: var(--color-print-highlight-bg);
   }
 
   .result-row.highlight .label,
   .result-row.highlight .value {
-    color: #6d28d9;
+    color: var(--color-print-accent);
   }
 
   .result-row.artist-payout {
-    background: #e6ffed;
+    background: var(--color-print-success-bg);
   }
 
   .result-row.artist-payout .label,
   .result-row.artist-payout .value {
-    color: #276749;
+    color: var(--color-print-success-text);
   }
 
   .result-row.venue-payout {
-    background: #feebc8;
+    background: var(--color-print-warning-bg);
   }
 
   .result-row.venue-payout .label,
   .result-row.venue-payout .value {
-    color: #c05621;
+    color: var(--color-print-warning-text);
   }
 
-  .print-btn,
   .calculator-print-btn {
     display: none;
   }
 
   .artist-name-display {
-    color: #333;
+    color: var(--color-print-label);
   }
 
-  .footer-section,
-  .calculator-footer-section,
   .ds-section-footer {
     display: none;
   }
@@ -999,7 +616,7 @@ body {
 .share-link-status-dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
 }
 
 .share-link-status-dot.active {
@@ -1103,7 +720,11 @@ body {
 }
 
 /* ============================================ */
-/* SETTLEMENT PACKET (PUBLIC VIEW) STYLES */
+/* SETTLEMENT PACKET (PUBLIC VIEW) STYLES       */
+/* s/[token]: MarketingShell, Card, PageHeader,  */
+/* DescriptionList, BreakdownList, ds-section-  */
+/* title, ds-card-footer. not-found: Card,     */
+/* Button + .settlement-not-found-*             */
 /* ============================================ */
 
 .settlement-packet-container {
@@ -1115,40 +736,27 @@ body {
 
 .settlement-packet-header {
   max-width: 800px;
-  margin: 0 auto 2rem;
-  text-align: center;
-  padding-bottom: 1.5rem;
+  margin: 0 auto 1.5rem;
+  text-align: left;
+  padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.settlement-packet-logo h1 {
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  color: var(--color-text-strong);
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.02em;
-}
-
-.settlement-packet-subtitle {
-  color: var(--color-accent);
+.settlement-report-author {
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
 }
 
 .settlement-packet-content {
   max-width: 800px;
   margin: 0 auto;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  padding: 2rem;
 }
 
 .settlement-section {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -1158,146 +766,42 @@ body {
   padding-bottom: 0;
 }
 
-.settlement-section-title {
-  font-size: var(--text-lg);
+/* Shared section heading (dsys); used on share page, calculator, etc. */
+.ds-section-title {
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-accent);
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.settlement-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.settlement-info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.settlement-label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.settlement-value {
-  color: var(--color-text);
-  font-size: var(--text-base);
-  font-weight: 500;
-}
-
-.settlement-breakdown {
-  background: var(--color-accent-bg);
-  padding: 1.5rem;
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-accent-bg);
-}
-
-.settlement-results {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.settlement-result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-}
-
-.settlement-result-label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  font-weight: 500;
-}
-
-.settlement-result-value {
-  color: var(--color-text-strong);
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: var(--font-geist-mono), monospace;
-}
-
-.settlement-result-value.settlement-negative {
-  color: var(--color-error);
-}
-
-.settlement-result-row.settlement-highlight {
-  background: var(--color-accent-bg);
-  border: 1px solid var(--color-accent-border);
-}
-
-.settlement-result-row.settlement-highlight .settlement-result-label {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
-.settlement-result-row.settlement-highlight .settlement-result-value {
-  color: var(--color-accent);
-  font-size: 1.2rem;
-}
-
-.settlement-divider {
-  height: 1px;
-  background: var(--color-border);
-  margin: 0.5rem 0;
-}
-
-.settlement-result-row.settlement-artist-payout {
-  background: var(--color-success-bg);
-  border: 1px solid var(--color-success-border);
-}
-
-.settlement-result-row.settlement-artist-payout .settlement-result-label,
-.settlement-result-row.settlement-artist-payout .settlement-result-value {
-  color: var(--color-success-strong);
-}
-
-.settlement-result-row.settlement-venue-payout {
-  background: var(--color-warning-bg);
-  border: 1px solid var(--color-warning-border);
-}
-
-.settlement-result-row.settlement-venue-payout .settlement-result-label,
-.settlement-result-row.settlement-venue-payout .settlement-result-value {
-  color: var(--color-warning-strong);
-}
-
-.settlement-packet-footer {
+/* Card footer (share page, etc.) */
+.ds-card-footer {
   max-width: 800px;
   margin: 2rem auto 0;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
-  text-align: center;
+  text-align: left;
 }
 
-.settlement-footer-text {
+.ds-card-footer-text {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   margin-bottom: 0.5rem;
 }
 
-.settlement-footer-link {
+.ds-card-footer-link {
   color: var(--color-accent);
   text-decoration: none;
   transition: color 0.2s;
 }
 
-.settlement-footer-link:hover {
+.ds-card-footer-link:hover {
   color: var(--color-accent-strong);
 }
 
-.settlement-footer-note {
+.ds-card-footer-note {
   color: var(--color-text-faint);
   font-size: var(--text-sm);
 }
@@ -1307,10 +811,6 @@ body {
   max-width: 500px;
   margin: 4rem auto;
   text-align: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  padding: 3rem 2rem;
 }
 
 .settlement-not-found-icon {
@@ -1339,127 +839,92 @@ body {
   justify-content: center;
 }
 
-.settlement-not-found-btn {
-  padding: 0.875rem 1.5rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  text-decoration: none;
-  border-radius: var(--radius-md);
-  transition: transform 0.15s, box-shadow 0.15s;
-  display: inline-block;
-}
-
-.settlement-not-found-btn:hover {
-  transform: translateY(-1px);
-}
-
-.settlement-not-found-btn:active {
-  transform: translateY(0);
-}
-
 /* Print styles for settlement packet */
 @media print {
   .settlement-packet-container {
-    background: #fff;
-    color: #000;
+    background: var(--color-print-bg);
+    color: var(--color-print-text);
     padding: 1rem;
   }
 
   .settlement-packet-header {
-    border-bottom-color: #ddd;
-  }
-
-  .settlement-packet-logo h1 {
-    color: #000;
-  }
-
-  .settlement-packet-subtitle {
-    color: #6d28d9;
+    border-bottom-color: var(--color-print-border);
   }
 
   .settlement-packet-content {
-    background: #fff;
-    border-color: #ddd;
+    background: var(--color-print-bg);
+    border-color: var(--color-print-border);
   }
 
   .settlement-section {
-    border-bottom-color: #e2e8f0;
+    border-bottom-color: var(--color-bg-3);
   }
 
-  .settlement-section-title {
-    color: #6d28d9;
+  .ds-section-title {
+    color: var(--color-print-accent);
   }
 
-  .settlement-label {
-    color: #4a5568;
+  .ds-breakdown {
+    background: var(--color-bg-3) !important;
+    border-color: var(--color-border-strong) !important;
   }
 
-  .settlement-value {
-    color: #000;
+  .ds-breakdown-row {
+    background: var(--color-print-bg);
   }
 
-  .settlement-breakdown {
-    background: #f7fafc;
-    border-color: #cbd5e0;
+  .ds-breakdown-label {
+    color: var(--color-text-muted);
   }
 
-  .settlement-result-row {
-    background: #fff;
+  .ds-breakdown-value {
+    color: var(--color-print-text);
   }
 
-  .settlement-result-label {
-    color: #4a5568;
+  .ds-breakdown-row--highlight {
+    background: var(--color-print-highlight-bg);
+    border-color: var(--color-accent-border);
   }
 
-  .settlement-result-value {
-    color: #000;
+  .ds-breakdown-row--highlight .ds-breakdown-label,
+  .ds-breakdown-row--highlight .ds-breakdown-value {
+    color: var(--color-print-accent);
   }
 
-  .settlement-result-row.settlement-highlight {
-    background: #f3eeff;
-    border-color: #c4b5fd;
+  .ds-breakdown-row--success {
+    background: var(--color-print-success-bg);
+    border-color: var(--color-success-border);
   }
 
-  .settlement-result-row.settlement-highlight .settlement-result-label,
-  .settlement-result-row.settlement-highlight .settlement-result-value {
-    color: #6d28d9;
+  .ds-breakdown-row--success .ds-breakdown-label,
+  .ds-breakdown-row--success .ds-breakdown-value {
+    color: var(--color-print-success-text);
   }
 
-  .settlement-result-row.settlement-artist-payout {
-    background: #e6ffed;
-    border-color: #9ae6b4;
+  .ds-breakdown-row--warning {
+    background: var(--color-print-warning-bg);
+    border-color: var(--color-warning-border);
   }
 
-  .settlement-result-row.settlement-artist-payout .settlement-result-label,
-  .settlement-result-row.settlement-artist-payout .settlement-result-value {
-    color: #276749;
+  .ds-breakdown-row--warning .ds-breakdown-label,
+  .ds-breakdown-row--warning .ds-breakdown-value {
+    color: var(--color-print-warning-text);
   }
 
-  .settlement-result-row.settlement-venue-payout {
-    background: #feebc8;
-    border-color: #fbd38d;
+  .ds-card-footer {
+    border-top-color: var(--color-bg-3);
   }
 
-  .settlement-result-row.settlement-venue-payout .settlement-result-label,
-  .settlement-result-row.settlement-venue-payout .settlement-result-value {
-    color: #c05621;
+  .ds-card-footer-text {
+    color: var(--color-text-muted);
   }
 
-  .settlement-packet-footer {
-    border-top-color: #e2e8f0;
+  .ds-card-footer-link {
+    color: var(--color-print-accent);
   }
 
-  .settlement-footer-text {
-    color: #4a5568;
-  }
-
-  .settlement-footer-link {
-    color: #6d28d9;
-  }
-
-  .settlement-footer-note {
-    color: #718096;
+  .ds-card-footer-note {
+    color: var(--color-text-faint);
   }
 }
 
@@ -1473,7 +938,7 @@ body {
     padding: 1.25rem;
   }
 
-  .settlement-info-grid {
+  .ds-dl {
     grid-template-columns: 1fr;
   }
 }

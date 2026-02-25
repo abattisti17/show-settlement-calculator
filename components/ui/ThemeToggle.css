@@ -3,7 +3,7 @@
   grid-template-columns: 1fr 1fr 1fr;
   gap: 0.25rem;
   padding: 0.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
@@ -18,7 +18,7 @@
   font-size: var(--text-xs);
   font-weight: 600;
   padding: 0.4rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   cursor: pointer;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   white-space: nowrap;
@@ -31,6 +31,6 @@
 
 .ds-theme-toggle-btn.active {
   background: var(--gradient-primary) !important;
-  color: #fff !important;
+  color: var(--color-on-primary) !important;
   box-shadow: 0 4px 12px var(--color-accent-border);
 }

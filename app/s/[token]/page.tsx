@@ -4,15 +4,24 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import JsonLd from "@/app/components/JsonLd";
 import { buildPageMetadata, toAbsoluteUrl } from "@/lib/seo";
+import { MarketingShell } from "@/components/ui/MarketingShell";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { DescriptionList } from "@/components/ui/DescriptionList";
+import { BreakdownList } from "@/components/ui/BreakdownList";
+import { SharePagePrintButton } from "./SharePagePrintButton";
+import "./shared-settlement.css";
 
 /**
  * Public share page for settlements
+ * Typography matches rest of app: --text-2xl (page title), --text-sm (section titles), --text-base (values), --text-lg (highlight row).
  * Server component that fetches show data using service role to bypass RLS
  * No authentication required - access granted via valid active token
  */
 
 interface Show {
   id: string;
+  user_id: string;
   title: string | null;
   show_date: string | null;
   inputs: {
@@ -108,6 +117,16 @@ export default async function SharedSettlementPage({
   }
 
   const typedShow = show as Show;
+  let authorEmail: string | null = null;
+  try {
+    const { data: userData } = await serviceClient.auth.admin.getUserById(
+      typedShow.user_id
+    );
+    authorEmail = userData?.user?.email ?? null;
+  } catch {
+    authorEmail = null;
+  }
+
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -128,171 +147,145 @@ export default async function SharedSettlementPage({
   };
 
   return (
-    <main className="settlement-packet-container">
-      <JsonLd data={breadcrumbSchema} />
-      {/* Header */}
-      <header className="settlement-packet-header">
-        <div className="settlement-packet-logo">
-          <h1>Show Settlement Calculator</h1>
-          <p className="settlement-packet-subtitle">Settlement Report</p>
+    <MarketingShell>
+      <main className="settlement-packet-container">
+        <JsonLd data={breadcrumbSchema} />
+        <div className="settlement-packet-header">
+          <PageHeader
+            title="Show Settlement Calculator"
+            description="Settlement Report"
+            action={<SharePagePrintButton />}
+          />
+          {authorEmail && (
+            <p className="settlement-report-author">Report by {authorEmail}</p>
+          )}
         </div>
-      </header>
 
-      {/* Settlement Content */}
-      <div className="settlement-packet-content">
+        <Card className="settlement-packet-content" variant="default" padding="lg">
         {/* Show Info Section */}
         <section className="settlement-section">
-          <h2 className="settlement-section-title">Show Information</h2>
-          <div className="settlement-info-grid">
+          <h2 className="ds-section-title">Show Information</h2>
+          <DescriptionList>
             {typedShow.title && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Show Name:</span>
-                <span className="settlement-value">{typedShow.title}</span>
-              </div>
+              <DescriptionList.Item label="Show Name:" value={typedShow.title} />
             )}
             {typedShow.inputs.artistName && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Artist:</span>
-                <span className="settlement-value">{typedShow.inputs.artistName}</span>
-              </div>
+              <DescriptionList.Item label="Artist:" value={typedShow.inputs.artistName} />
             )}
             {typedShow.show_date && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Show Date:</span>
-                <span className="settlement-value">
-                  {new Date(typedShow.show_date).toLocaleDateString()}
-                </span>
-              </div>
+              <DescriptionList.Item
+                label="Show Date:"
+                value={new Date(typedShow.show_date).toLocaleDateString()}
+              />
             )}
-          </div>
+          </DescriptionList>
         </section>
 
         {/* Deal Structure Section */}
         <section className="settlement-section">
-          <h2 className="settlement-section-title">Deal Structure</h2>
-          <div className="settlement-info-grid">
-            <div className="settlement-info-item">
-              <span className="settlement-label">Deal Type:</span>
-              <span className="settlement-value">
-                {formatDealType(typedShow.inputs.dealType || "")}
-              </span>
-            </div>
+          <h2 className="ds-section-title">Deal Structure</h2>
+          <DescriptionList>
+            <DescriptionList.Item
+              label="Deal Type:"
+              value={formatDealType(typedShow.inputs.dealType || "")}
+            />
             {typedShow.inputs.guarantee && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Guarantee Amount:</span>
-                <span className="settlement-value">
-                  {formatCurrency(parseFloat(typedShow.inputs.guarantee))}
-                </span>
-              </div>
+              <DescriptionList.Item
+                label="Guarantee Amount:"
+                value={formatCurrency(parseFloat(typedShow.inputs.guarantee))}
+              />
             )}
             {typedShow.inputs.percentage && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Percentage:</span>
-                <span className="settlement-value">{typedShow.inputs.percentage}%</span>
-              </div>
+              <DescriptionList.Item
+                label="Percentage:"
+                value={`${typedShow.inputs.percentage}%`}
+              />
             )}
-          </div>
+          </DescriptionList>
         </section>
 
         {/* Show Details Section */}
         <section className="settlement-section">
-          <h2 className="settlement-section-title">Show Details</h2>
-          <div className="settlement-info-grid">
+          <h2 className="ds-section-title">Show Details</h2>
+          <DescriptionList>
             {typedShow.inputs.ticketPrice && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Ticket Price:</span>
-                <span className="settlement-value">
-                  {formatCurrency(parseFloat(typedShow.inputs.ticketPrice))}
-                </span>
-              </div>
+              <DescriptionList.Item
+                label="Ticket Price:"
+                value={formatCurrency(parseFloat(typedShow.inputs.ticketPrice))}
+              />
             )}
             {typedShow.inputs.ticketsSold && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Tickets Sold:</span>
-                <span className="settlement-value">{typedShow.inputs.ticketsSold}</span>
-              </div>
+              <DescriptionList.Item
+                label="Tickets Sold:"
+                value={typedShow.inputs.ticketsSold}
+              />
             )}
             {typedShow.inputs.taxRate && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Tax Rate:</span>
-                <span className="settlement-value">{typedShow.inputs.taxRate}%</span>
-              </div>
+              <DescriptionList.Item
+                label="Tax Rate:"
+                value={`${typedShow.inputs.taxRate}%`}
+              />
             )}
             {typedShow.inputs.totalExpenses && (
-              <div className="settlement-info-item">
-                <span className="settlement-label">Total Expenses:</span>
-                <span className="settlement-value">
-                  {formatCurrency(parseFloat(typedShow.inputs.totalExpenses))}
-                </span>
-              </div>
+              <DescriptionList.Item
+                label="Total Expenses:"
+                value={formatCurrency(parseFloat(typedShow.inputs.totalExpenses))}
+              />
             )}
-          </div>
+          </DescriptionList>
         </section>
 
         {/* Settlement Breakdown */}
-        <section className="settlement-section settlement-breakdown">
-          <h2 className="settlement-section-title">Settlement Breakdown</h2>
-          
-          <div className="settlement-results">
-            <div className="settlement-result-row">
-              <span className="settlement-result-label">Gross Revenue</span>
-              <span className="settlement-result-value">
-                {formatCurrency(typedShow.results.grossRevenue)}
-              </span>
-            </div>
-
-            <div className="settlement-result-row">
-              <span className="settlement-result-label">Tax</span>
-              <span className="settlement-result-value settlement-negative">
-                −{formatCurrency(typedShow.results.taxAmount)}
-              </span>
-            </div>
-
-            <div className="settlement-result-row">
-              <span className="settlement-result-label">Expenses</span>
-              <span className="settlement-result-value settlement-negative">
-                −{formatCurrency(typedShow.results.totalExpenses)}
-              </span>
-            </div>
-
-            <div className="settlement-result-row settlement-highlight">
-              <span className="settlement-result-label">Net Profit</span>
-              <span className="settlement-result-value">
-                {formatCurrency(typedShow.results.netProfit)}
-              </span>
-            </div>
-
-            <div className="settlement-divider"></div>
-
-            <div className="settlement-result-row settlement-artist-payout">
-              <span className="settlement-result-label">Artist Payout</span>
-              <span className="settlement-result-value">
-                {formatCurrency(typedShow.results.artistPayout)}
-              </span>
-            </div>
-
-            <div className="settlement-result-row settlement-venue-payout">
-              <span className="settlement-result-label">Promoter/House Settlement</span>
-              <span className="settlement-result-value">
-                {formatCurrency(typedShow.results.venuePayout)}
-              </span>
-            </div>
-          </div>
+        <section className="settlement-section">
+          <h2 className="ds-section-title">Settlement Breakdown</h2>
+          <BreakdownList>
+            <BreakdownList.Row
+              label="Gross Revenue"
+              value={formatCurrency(typedShow.results.grossRevenue)}
+            />
+            <BreakdownList.Row
+              label="Tax"
+              value={`−${formatCurrency(typedShow.results.taxAmount)}`}
+              variant="negative"
+            />
+            <BreakdownList.Row
+              label="Expenses"
+              value={`−${formatCurrency(typedShow.results.totalExpenses)}`}
+              variant="negative"
+            />
+            <BreakdownList.Row
+              label="Net Profit"
+              value={formatCurrency(typedShow.results.netProfit)}
+              variant="highlight"
+            />
+            <BreakdownList.Divider />
+            <BreakdownList.Row
+              label="Artist Payout"
+              value={formatCurrency(typedShow.results.artistPayout)}
+              variant="success"
+            />
+            <BreakdownList.Row
+              label="Promoter/House Settlement"
+              value={formatCurrency(typedShow.results.venuePayout)}
+              variant="warning"
+            />
+          </BreakdownList>
         </section>
 
         {/* Footer */}
-        <footer className="settlement-packet-footer">
-          <p className="settlement-footer-text">
+        <footer className="ds-card-footer">
+          <p className="ds-card-footer-text">
             Generated on {new Date().toLocaleDateString()} via{" "}
-            <Link href="/" className="settlement-footer-link">
+            <Link href="/" className="ds-card-footer-link">
               Show Settlement Calculator
             </Link>
           </p>
-          <p className="settlement-footer-note">
+          <p className="ds-card-footer-note">
             This is a shared settlement report. Sign up to create your own settlements.
           </p>
         </footer>
-      </div>
-    </main>
+      </Card>
+      </main>
+    </MarketingShell>
   );
 }
