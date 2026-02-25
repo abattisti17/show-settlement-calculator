@@ -263,18 +263,18 @@ If a phase requires UI that can't be built with the components above, you MUST s
 
 ---
 
-## Phase 10 — Multi-Act Support
+## Phase 10 — Multi-Act Support ✅
 
 **Goal:** Allow multiple artists on a single show, each with their own deal structure.
 
 ### Tasks
 
-- [ ] Refactor the deal structure section to support multiple artists per show
-- [ ] Each artist gets: name, deal type, deal parameters (guarantee, percentage, etc.), deposit
-- [ ] All artists settle against the same gross/net
-- [ ] Show a per-artist payout breakdown and a combined venue settlement
-- [ ] Handle the "does one artist's guarantee reduce the net available to other artists?" question explicitly
-- [ ] Update the shared view to show per-artist breakdowns
+- [x] Refactor the deal structure section to support multiple artists per show
+- [x] Each artist gets: name, deal type, deal parameters (guarantee, percentage, etc.), deposit
+- [x] All artists settle against the same gross/net
+- [x] Show a per-artist payout breakdown and a combined venue settlement
+- [x] Handle the "does one artist's guarantee reduce the net available to other artists?" question explicitly
+- [x] Update the shared view to show per-artist breakdowns
 
 ### Acceptance
 
@@ -285,17 +285,17 @@ If a phase requires UI that can't be built with the components above, you MUST s
 
 ---
 
-## Phase 11 — Notes, Annotations & Countersignature
+## Phase 11 — Notes, Annotations & Countersignature ✅
 
 **Goal:** Let both parties document disputes and acknowledge the settlement.
 
 ### Tasks
 
-- [ ] Add a general notes field to the settlement
-- [ ] Add per-line-item notes (e.g., "artist disputes $200 security charge")
-- [ ] On the shared view, add an "Acknowledge" button that records the viewer's name/email and timestamp
-- [ ] Store acknowledgments in a new `settlement_acknowledgments` table (or JSONB on `shows`)
-- [ ] Show acknowledgment status on the dashboard ("Acknowledged by Tour Manager on 2/25")
+- [x] Add a general notes field to the settlement
+- [x] Add per-line-item notes (e.g., "artist disputes $200 security charge")
+- [x] On the shared view, add an "Acknowledge" button that records the viewer's name/email and timestamp
+- [x] Store acknowledgments in JSONB on `shows` (results.acknowledgments)
+- [x] Show acknowledgment status on the dashboard ("Acknowledged by Tour Manager on 2/25")
 
 ### Acceptance
 

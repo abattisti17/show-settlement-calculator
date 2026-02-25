@@ -342,18 +342,113 @@
   margin: 0.25rem 0;
 }
 
+/* Per-artist sections */
+.calculator-artist-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  background: var(--color-bg-secondary, #fafafa);
+}
+
+.calculator-artist-section .calculator-section-title,
+.calculator-artist-section .calculator-subsection-title {
+  display: flex;
+  align-items: center;
+}
+
+.calculator-subsection-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.calculator-artist-result-block + .calculator-artist-result-block {
+  margin-top: 0.5rem;
+}
+
+/* Per-expense notes */
+.calculator-expense-note {
+  grid-column: 1 / -1;
+}
+
+.calculator-note-input {
+  font-size: var(--text-sm) !important;
+  padding: 0.35rem 0.75rem !important;
+  color: var(--color-text-secondary);
+}
+
+.calculator-note-input::placeholder {
+  font-style: italic;
+}
+
+/* General notes textarea */
+.calculator-notes-textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+/* Notes display in results */
+.calculator-notes-display {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: var(--text-sm);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  white-space: pre-wrap;
+}
+
+/* Per-line-item note in results */
+.calculator-line-note {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Acknowledgment display */
+.calculator-acknowledgments {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+
+.calculator-ack-entry {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0.25rem 0;
+}
+
 /* Page header actions */
 .calculator-header-actions {
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.calculator-header-actions-row {
+  display: flex;
   gap: 0.75rem;
   align-items: center;
-  flex-wrap: wrap;
+}
+
+.share-popover-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.share-popover-content {
+  min-width: 0;
 }
 
 @media (max-width: 768px) {
   .calculator-header-actions {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    align-items: flex-start;
   }
 }
 

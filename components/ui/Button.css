@@ -18,6 +18,18 @@
   width: 100%;
 }
 
+/* Button group with equal-width children — use on a flex container wrapping buttons */
+.ds-btn-group-equal {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.ds-btn-group-equal .ds-btn {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Sizes */
 .ds-btn-sm {
   padding: 0.5rem 1rem;

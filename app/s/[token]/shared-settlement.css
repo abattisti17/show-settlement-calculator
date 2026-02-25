@@ -1,2 +1,70 @@
 /* Shared settlement page: breakdown uses theme (var(--color-dark-panel)) so it respects dark mode. */
 /* Print keeps light breakdown via globals.css @media print .ds-breakdown */
+
+/* Notes */
+.settlement-notes-text {
+  font-size: var(--text-base);
+  white-space: pre-wrap;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Acknowledgment section */
+.settlement-ack-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.settlement-ack-list {
+  margin-bottom: 1.25rem;
+}
+
+.settlement-ack-entry {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0.25rem 0;
+}
+
+.settlement-ack-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settlement-ack-prompt {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.settlement-ack-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .settlement-ack-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settlement-ack-msg {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.settlement-ack-msg.success {
+  color: var(--color-success);
+}
+
+.settlement-ack-msg.error {
+  color: var(--color-error);
+}
+
+@media print {
+  .settlement-ack-form {
+    display: none;
+  }
+}

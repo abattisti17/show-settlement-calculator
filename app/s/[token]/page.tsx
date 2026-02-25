@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { DescriptionList } from "@/components/ui/DescriptionList";
 import { BreakdownList } from "@/components/ui/BreakdownList";
 import { SharePagePrintButton } from "./SharePagePrintButton";
+import { AcknowledgeForm } from "./AcknowledgeForm";
 import "./shared-settlement.css";
 
 /**
@@ -19,12 +20,40 @@ import "./shared-settlement.css";
  * No authentication required - access granted via valid active token
  */
 
+interface ArtistInput {
+  artistName?: string;
+  dealType?: string;
+  guarantee?: string;
+  percentage?: string;
+  breakeven?: string;
+  deposit?: string;
+  withholdingRate?: string;
+  withholdingState?: string;
+  buyoutItems?: { label: string; amount: string }[];
+  buyoutMode?: string;
+}
+
+interface ArtistResultEntry {
+  artistName: string;
+  dealType: string;
+  artistPayout: number;
+  overage?: number;
+  breakeven?: number;
+  withholdingAmount?: number;
+  withholdingState?: string;
+  buyoutItems?: { label: string; amount: number }[];
+  totalBuyouts?: number;
+  deposit: number;
+  balanceDue: number;
+}
+
 interface Show {
   id: string;
   user_id: string;
   title: string | null;
   show_date: string | null;
   inputs: {
+    artists?: ArtistInput[];
     artistName?: string;
     ticketTiers?: { name: string; price: string; sold: string; comps?: string }[];
     capacity?: string;
@@ -35,7 +64,8 @@ interface Show {
     ccFeeRate?: string;
     ccFeeMode?: string;
     totalExpenses?: string;
-    expenseItems?: { label: string; amount: string }[];
+    expenseItems?: { label: string; amount: string; note?: string }[];
+    notes?: string;
     dealType?: string;
     guarantee?: string;
     percentage?: string;
@@ -55,8 +85,10 @@ interface Show {
     totalComps?: number;
     taxAmount: number;
     totalExpenses: number;
-    expenseItems?: { label: string; amount: number }[];
+    expenseItems?: { label: string; amount: number; note?: string }[];
+    notes?: string;
     netProfit: number;
+    artists?: ArtistResultEntry[];
     artistPayout: number;
     overage?: number;
     breakeven?: number;
@@ -73,6 +105,7 @@ interface Show {
     merchNetToArtist?: number;
     totalDueToArtist?: number;
     calculatedAt?: string;
+    acknowledgments?: { name: string; email: string; timestamp: string }[];
   };
   created_at: string;
   updated_at: string;
@@ -207,9 +240,14 @@ export default async function SharedSettlementPage({
             {typedShow.title && (
               <DescriptionList.Item label="Show Name:" value={typedShow.title} />
             )}
-            {typedShow.inputs.artistName && (
-              <DescriptionList.Item label="Artist:" value={typedShow.inputs.artistName} />
-            )}
+            {(() => {
+              const artistNames = typedShow.results.artists
+                ? typedShow.results.artists.map((a) => a.artistName).filter(Boolean).join(", ")
+                : typedShow.inputs.artistName || "";
+              return artistNames ? (
+                <DescriptionList.Item label={typedShow.results.artists && typedShow.results.artists.length > 1 ? "Artists:" : "Artist:"} value={artistNames} />
+              ) : null;
+            })()}
             {typedShow.show_date && (
               <DescriptionList.Item
                 label="Show Date:"
@@ -219,53 +257,83 @@ export default async function SharedSettlementPage({
           </DescriptionList>
         </section>
 
+        {/* Notes */}
+        {(typedShow.results.notes || typedShow.inputs.notes) && (
+          <section className="settlement-section">
+            <h2 className="ds-section-title">Notes</h2>
+            <p className="settlement-notes-text">{typedShow.results.notes || typedShow.inputs.notes}</p>
+          </section>
+        )}
+
         {/* Deal Structure Section */}
-        <section className="settlement-section">
-          <h2 className="ds-section-title">Deal Structure</h2>
-          <DescriptionList>
-            <DescriptionList.Item
-              label="Deal Type:"
-              value={formatDealType(typedShow.inputs.dealType || "")}
-            />
-            {typedShow.inputs.guarantee && (
-              <DescriptionList.Item
-                label="Guarantee Amount:"
-                value={formatCurrency(parseFloat(typedShow.inputs.guarantee))}
-              />
-            )}
-            {typedShow.inputs.percentage && (
-              <DescriptionList.Item
-                label={typedShow.inputs.dealType === "guarantee_plus_percentage" ? "Back-End Percentage:" : "Percentage:"}
-                value={`${typedShow.inputs.percentage}%`}
-              />
-            )}
-            {typedShow.inputs.breakeven && parseFloat(typedShow.inputs.breakeven) > 0 && (
-              <DescriptionList.Item
-                label="Breakeven Point:"
-                value={formatCurrency(parseFloat(typedShow.inputs.breakeven))}
-              />
-            )}
-            {typedShow.inputs.deposit && parseFloat(typedShow.inputs.deposit) > 0 && (
-              <DescriptionList.Item
-                label="Deposit / Advance Paid:"
-                value={formatCurrency(parseFloat(typedShow.inputs.deposit))}
-              />
-            )}
-            {typedShow.inputs.withholdingRate && parseFloat(typedShow.inputs.withholdingRate) > 0 && (
-              <DescriptionList.Item
-                label="Withholding Tax:"
-                value={`${typedShow.inputs.withholdingRate}%${typedShow.inputs.withholdingState ? ` (${typedShow.inputs.withholdingState})` : ''}`}
-              />
-            )}
-            {typedShow.inputs.buyoutItems && typedShow.inputs.buyoutItems.length > 0 &&
-              typedShow.inputs.buyoutItems.some(b => parseFloat(b.amount) > 0) && (
-              <DescriptionList.Item
-                label="Buyout Handling:"
-                value={typedShow.inputs.buyoutMode === 'show_expense' ? 'Show expense' : 'Deducted from balance'}
-              />
-            )}
-          </DescriptionList>
-        </section>
+        {(() => {
+          const artistInputs: ArtistInput[] = typedShow.inputs.artists && typedShow.inputs.artists.length > 0
+            ? typedShow.inputs.artists
+            : [{
+                artistName: typedShow.inputs.artistName,
+                dealType: typedShow.inputs.dealType,
+                guarantee: typedShow.inputs.guarantee,
+                percentage: typedShow.inputs.percentage,
+                breakeven: typedShow.inputs.breakeven,
+                deposit: typedShow.inputs.deposit,
+                withholdingRate: typedShow.inputs.withholdingRate,
+                withholdingState: typedShow.inputs.withholdingState,
+                buyoutItems: typedShow.inputs.buyoutItems,
+                buyoutMode: typedShow.inputs.buyoutMode,
+              }];
+          const isMulti = artistInputs.length > 1;
+
+          return artistInputs.map((ai, idx) => (
+            <section key={idx} className="settlement-section">
+              <h2 className="ds-section-title">
+                {isMulti ? `${ai.artistName || `Artist ${idx + 1}`} — Deal Structure` : "Deal Structure"}
+              </h2>
+              <DescriptionList>
+                <DescriptionList.Item
+                  label="Deal Type:"
+                  value={formatDealType(ai.dealType || "")}
+                />
+                {ai.guarantee && (
+                  <DescriptionList.Item
+                    label="Guarantee Amount:"
+                    value={formatCurrency(parseFloat(ai.guarantee))}
+                  />
+                )}
+                {ai.percentage && (
+                  <DescriptionList.Item
+                    label={ai.dealType === "guarantee_plus_percentage" ? "Back-End Percentage:" : "Percentage:"}
+                    value={`${ai.percentage}%`}
+                  />
+                )}
+                {ai.breakeven && parseFloat(ai.breakeven) > 0 && (
+                  <DescriptionList.Item
+                    label="Breakeven Point:"
+                    value={formatCurrency(parseFloat(ai.breakeven))}
+                  />
+                )}
+                {ai.deposit && parseFloat(ai.deposit) > 0 && (
+                  <DescriptionList.Item
+                    label="Deposit / Advance Paid:"
+                    value={formatCurrency(parseFloat(ai.deposit))}
+                  />
+                )}
+                {ai.withholdingRate && parseFloat(ai.withholdingRate) > 0 && (
+                  <DescriptionList.Item
+                    label="Withholding Tax:"
+                    value={`${ai.withholdingRate}%${ai.withholdingState ? ` (${ai.withholdingState})` : ''}`}
+                  />
+                )}
+                {ai.buyoutItems && ai.buyoutItems.length > 0 &&
+                  ai.buyoutItems.some(b => parseFloat(b.amount) > 0) && (
+                  <DescriptionList.Item
+                    label="Buyout Handling:"
+                    value={ai.buyoutMode === 'show_expense' ? 'Show expense' : 'Deducted from balance'}
+                  />
+                )}
+              </DescriptionList>
+            </section>
+          ));
+        })()}
 
         {/* Show Details Section */}
         <section className="settlement-section">
@@ -323,7 +391,7 @@ export default async function SharedSettlementPage({
               typedShow.inputs.expenseItems.map((item, index) => (
                 <DescriptionList.Item
                   key={index}
-                  label={`${item.label || "Expense"}:`}
+                  label={`${item.label || "Expense"}${item.note ? ` (${item.note})` : ""}:`}
                   value={formatCurrency(parseFloat(item.amount))}
                 />
               ))
@@ -377,22 +445,40 @@ export default async function SharedSettlementPage({
                 {typedShow.results.expenseItems.map((item, index) => (
                   <BreakdownList.Row
                     key={index}
-                    label={item.label}
+                    label={item.note ? `${item.label} — ${item.note}` : item.label}
                     value={`−${formatCurrency(item.amount)}`}
                     variant="negative"
                   />
                 ))}
-                {typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode === 'show_expense' && (
-                  typedShow.results.buyoutItems.map((item, index) => (
-                    <BreakdownList.Row
-                      key={`buyout-exp-${index}`}
-                      label={`${item.label} (buyout)`}
-                      value={`−${formatCurrency(item.amount)}`}
-                      variant="negative"
-                    />
-                  ))
-                )}
-                {(typedShow.results.expenseItems.length > 1 || (typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode === 'show_expense')) && (
+                {(() => {
+                  if (typedShow.results.artists && typedShow.results.artists.length > 0) {
+                    const inputArtists = typedShow.inputs.artists || [typedShow.inputs];
+                    return typedShow.results.artists.flatMap((ar, arIdx) => {
+                      const ai = inputArtists[arIdx] || {};
+                      if (ai.buyoutMode !== "show_expense" || !ar.buyoutItems) return [];
+                      return ar.buyoutItems.map((item, bi) => (
+                        <BreakdownList.Row
+                          key={`buyout-exp-${arIdx}-${bi}`}
+                          label={`${item.label} (buyout${typedShow.results.artists!.length > 1 ? ` — ${ar.artistName}` : ''})`}
+                          value={`−${formatCurrency(item.amount)}`}
+                          variant="negative"
+                        />
+                      ));
+                    });
+                  }
+                  if (typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode === 'show_expense') {
+                    return typedShow.results.buyoutItems.map((item, index) => (
+                      <BreakdownList.Row
+                        key={`buyout-exp-${index}`}
+                        label={`${item.label} (buyout)`}
+                        value={`−${formatCurrency(item.amount)}`}
+                        variant="negative"
+                      />
+                    ));
+                  }
+                  return null;
+                })()}
+                {typedShow.results.expenseItems.length > 1 && (
                   <BreakdownList.Row
                     label="Total Expenses"
                     value={`−${formatCurrency(typedShow.results.totalExpenses)}`}
@@ -413,71 +499,111 @@ export default async function SharedSettlementPage({
               variant="highlight"
             />
             <BreakdownList.Divider />
-            {typedShow.results.overage != null && typedShow.results.breakeven != null && (
+            {(() => {
+              const artistResults = typedShow.results.artists && typedShow.results.artists.length > 0
+                ? typedShow.results.artists
+                : [{
+                    artistName: typedShow.inputs.artistName || "Artist",
+                    dealType: typedShow.inputs.dealType || "guarantee",
+                    artistPayout: typedShow.results.artistPayout,
+                    overage: typedShow.results.overage,
+                    breakeven: typedShow.results.breakeven,
+                    withholdingAmount: typedShow.results.withholdingAmount,
+                    withholdingState: typedShow.results.withholdingState,
+                    buyoutItems: typedShow.results.buyoutItems,
+                    totalBuyouts: typedShow.results.totalBuyouts,
+                    deposit: typedShow.results.deposit ?? 0,
+                    balanceDue: typedShow.results.balanceDue ?? 0,
+                  }];
+              const artistInputs: ArtistInput[] = typedShow.inputs.artists && typedShow.inputs.artists.length > 0
+                ? typedShow.inputs.artists
+                : [typedShow.inputs];
+              const isMulti = artistResults.length > 1;
+
+              return artistResults.map((ar, arIdx) => {
+                const ai = artistInputs[arIdx] || {};
+                const hasDeductions = ar.deposit > 0 || (ar.withholdingAmount != null && ar.withholdingAmount > 0) || (ar.totalBuyouts != null && ar.totalBuyouts > 0 && ai.buyoutMode !== 'show_expense');
+                return (
+                  <div key={arIdx}>
+                    {isMulti && arIdx > 0 && <BreakdownList.Divider />}
+                    {isMulti && (
+                      <BreakdownList.Row label={ar.artistName} value="" variant="highlight" />
+                    )}
+                    {ar.overage != null && ar.breakeven != null && (
+                      <>
+                        <BreakdownList.Row
+                          label="Guarantee"
+                          value={formatCurrency(ar.artistPayout - ar.overage)}
+                        />
+                        <BreakdownList.Row
+                          label="Breakeven Point"
+                          value={formatCurrency(ar.breakeven)}
+                        />
+                        <BreakdownList.Row
+                          label="Back-End Overage"
+                          value={formatCurrency(ar.overage)}
+                        />
+                      </>
+                    )}
+                    <BreakdownList.Row
+                      label={
+                        ar.overage != null
+                          ? `${isMulti ? ar.artistName + ' ' : ''}Payout (Guarantee + Overage)`
+                          : ar.dealType === "percentage_of_gross"
+                          ? `${isMulti ? ar.artistName + ' ' : 'Artist '}Payout (${ai.percentage}% of Gross)`
+                          : ar.dealType === "door_deal"
+                          ? `${isMulti ? ar.artistName + ' ' : 'Artist '}Payout (${ai.percentage}% of Gross After Tax)`
+                          : `${isMulti ? ar.artistName + ' ' : 'Artist '}Payout`
+                      }
+                      value={formatCurrency(ar.artistPayout)}
+                      variant="success"
+                    />
+                    {ar.withholdingAmount != null && ar.withholdingAmount > 0 && (
+                      <BreakdownList.Row
+                        label={`Withholding Tax (${ai.withholdingRate}%${ar.withholdingState ? `, ${ar.withholdingState}` : ''})`}
+                        value={`−${formatCurrency(ar.withholdingAmount)}`}
+                        variant="negative"
+                      />
+                    )}
+                    {ar.buyoutItems && ar.buyoutItems.length > 0 && ai.buyoutMode !== 'show_expense' && (
+                      ar.buyoutItems.map((item, index) => (
+                        <BreakdownList.Row
+                          key={`buyout-${arIdx}-${index}`}
+                          label={item.label}
+                          value={`−${formatCurrency(item.amount)}`}
+                          variant="negative"
+                        />
+                      ))
+                    )}
+                    {hasDeductions && (
+                      <>
+                        {ar.deposit > 0 && (
+                          <BreakdownList.Row
+                            label="Deposit Paid"
+                            value={`−${formatCurrency(ar.deposit)}`}
+                            variant="negative"
+                          />
+                        )}
+                        <BreakdownList.Row
+                          label={ar.balanceDue < 0
+                            ? "Overpayment (due back to promoter)"
+                            : "Balance Due at Settlement"}
+                          value={formatCurrency(Math.abs(ar.balanceDue))}
+                          variant={ar.balanceDue < 0 ? "warning" : "success"}
+                        />
+                      </>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+            {typedShow.results.artists && typedShow.results.artists.length > 1 && (
               <>
+                <BreakdownList.Divider />
                 <BreakdownList.Row
-                  label="Guarantee"
-                  value={formatCurrency(typedShow.results.artistPayout - typedShow.results.overage)}
-                />
-                <BreakdownList.Row
-                  label="Breakeven Point"
-                  value={formatCurrency(typedShow.results.breakeven)}
-                />
-                <BreakdownList.Row
-                  label="Back-End Overage"
-                  value={formatCurrency(typedShow.results.overage)}
-                />
-              </>
-            )}
-            <BreakdownList.Row
-              label={
-                typedShow.results.overage != null
-                  ? "Artist Payout (Guarantee + Overage)"
-                  : typedShow.inputs.dealType === "percentage_of_gross"
-                  ? `Artist Payout (${typedShow.inputs.percentage}% of Gross)`
-                  : typedShow.inputs.dealType === "door_deal"
-                  ? `Artist Payout (${typedShow.inputs.percentage}% of Gross After Tax)`
-                  : "Artist Payout"
-              }
-              value={formatCurrency(typedShow.results.artistPayout)}
-              variant="success"
-            />
-            {typedShow.results.withholdingAmount != null && typedShow.results.withholdingAmount > 0 && (
-              <BreakdownList.Row
-                label={`Withholding Tax (${typedShow.inputs.withholdingRate}%${typedShow.results.withholdingState ? `, ${typedShow.results.withholdingState}` : ''})`}
-                value={`−${formatCurrency(typedShow.results.withholdingAmount)}`}
-                variant="negative"
-              />
-            )}
-            {typedShow.results.buyoutItems && typedShow.results.buyoutItems.length > 0 && typedShow.inputs.buyoutMode !== 'show_expense' && (
-              typedShow.results.buyoutItems.map((item, index) => (
-                <BreakdownList.Row
-                  key={`buyout-${index}`}
-                  label={item.label}
-                  value={`−${formatCurrency(item.amount)}`}
-                  variant="negative"
-                />
-              ))
-            )}
-            {(
-              (typedShow.results.deposit != null && typedShow.results.deposit > 0) ||
-              (typedShow.results.withholdingAmount != null && typedShow.results.withholdingAmount > 0) ||
-              (typedShow.results.totalBuyouts != null && typedShow.results.totalBuyouts > 0 && typedShow.inputs.buyoutMode !== 'show_expense')
-            ) && (
-              <>
-                {typedShow.results.deposit != null && typedShow.results.deposit > 0 && (
-                  <BreakdownList.Row
-                    label="Deposit Paid"
-                    value={`−${formatCurrency(typedShow.results.deposit)}`}
-                    variant="negative"
-                  />
-                )}
-                <BreakdownList.Row
-                  label={typedShow.results.balanceDue != null && typedShow.results.balanceDue < 0
-                    ? "Overpayment (due back to promoter)"
-                    : "Balance Due at Settlement"}
-                  value={formatCurrency(Math.abs(typedShow.results.balanceDue ?? 0))}
-                  variant={typedShow.results.balanceDue != null && typedShow.results.balanceDue < 0 ? "warning" : "success"}
+                  label="Total Artist Payouts"
+                  value={formatCurrency(typedShow.results.artistPayout)}
+                  variant="highlight"
                 />
               </>
             )}
@@ -542,6 +668,12 @@ export default async function SharedSettlementPage({
             </BreakdownList>
           </section>
         )}
+
+        {/* Acknowledgment */}
+        <AcknowledgeForm
+          token={token}
+          initialAcknowledgments={typedShow.results.acknowledgments || []}
+        />
 
         {/* Footer */}
         <footer className="ds-card-footer">

@@ -11,6 +11,8 @@ export interface PopoverProps {
   onOpenChange: (open: boolean) => void;
   align?: "left" | "right";
   className?: string;
+  /** Panel width in px. Default 280. */
+  panelWidth?: number;
 }
 
 /**
@@ -24,6 +26,7 @@ export function Popover({
   onOpenChange,
   align = "right",
   className,
+  panelWidth = 280,
 }: PopoverProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -34,12 +37,12 @@ export function Popover({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const gap = 8;
-    const width = 280;
+    const width = panelWidth;
     setPosition({
       top: rect.bottom + gap,
       left: align === "right" ? rect.right - width : rect.left,
     });
-  }, [align]);
+  }, [align, panelWidth]);
 
   useEffect(() => {
     if (!open || typeof document === "undefined") return;
@@ -93,8 +96,8 @@ export function Popover({
               position: "fixed",
               top: position.top,
               left: position.left,
-              width: 280,
-              minWidth: 280,
+              width: panelWidth,
+              minWidth: panelWidth,
             }}
           >
             {children}

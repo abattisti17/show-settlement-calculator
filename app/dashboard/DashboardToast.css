@@ -4,12 +4,13 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 0.75rem 1.25rem;
-  background: var(--color-surface-strong);
+  background: var(--color-bg, #fff);
   color: var(--color-text-strong);
   font-size: var(--text-sm);
   font-weight: 500;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   animation: dashboard-toast-in 0.2s ease-out;
 }

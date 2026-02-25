@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import JsonLd from "./components/JsonLd";
 import CalculatorContent from "./calculator-content";
+import { DashboardToastProvider } from "./dashboard/DashboardToast";
 import CalculatorPaywall from "./calculator-paywall";
 import "./landing.css";
 import "./calculator.css";
@@ -367,10 +368,12 @@ export default async function Home() {
   }
 
   return (
-    <CalculatorContent
-      userId={user.id}
-      userEmail={user.email ?? ""}
-      accountMenuData={accountMenuData}
-    />
+    <DashboardToastProvider>
+      <CalculatorContent
+        userId={user.id}
+        userEmail={user.email ?? ""}
+        accountMenuData={accountMenuData}
+      />
+    </DashboardToastProvider>
   );
 }

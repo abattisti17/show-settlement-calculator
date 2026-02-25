@@ -6,6 +6,7 @@ import { AppShell } from "@/components/ui/AppShell";
 import { AppAccountMenu } from "@/components/ui/AppAccountMenu";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { getEntitlementDetails } from "@/lib/access/entitlements";
 import { getUserSubscription } from "@/lib/stripe/subscription";
@@ -60,7 +61,7 @@ export default async function DashboardPage() {
   // Fetch user's shows
   const { data: shows, error: showsError } = await supabase
     .from('shows')
-    .select('id, title, updated_at, inputs')
+    .select('id, title, updated_at, inputs, results')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
 
@@ -134,12 +135,23 @@ export default async function DashboardPage() {
                         </Link>
                         <div className="show-card-content">
                           <h3 className="show-title">{show.title}</h3>
-                          {show.inputs?.artistName && (
-                            <p className="show-artist">Artist: {show.inputs.artistName}</p>
-                          )}
+                          {(() => {
+                            const artists = show.inputs?.artists;
+                            const names = artists && artists.length > 0
+                              ? artists.map((a: { artistName?: string }) => a.artistName).filter(Boolean).join(", ")
+                              : show.inputs?.artistName || "";
+                            return names ? <p className="show-artist">Artist{artists && artists.length > 1 ? "s" : ""}: {names}</p> : null;
+                          })()}
                           <p className="show-timestamp">
                             Last saved: {formatRelativeTime(show.updated_at)}
                           </p>
+                          {show.results?.acknowledgments && show.results.acknowledgments.length > 0 && (
+                            <Badge variant="success">
+                              Acknowledged by {show.results.acknowledgments[show.results.acknowledgments.length - 1].name}
+                              {" · "}
+                              {new Date(show.results.acknowledgments[show.results.acknowledgments.length - 1].timestamp).toLocaleDateString()}
+                            </Badge>
+                          )}
                         </div>
                         <div className="show-card-actions">
                           <CopyShareLinkButton

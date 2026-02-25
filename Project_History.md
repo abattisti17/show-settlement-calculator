@@ -997,3 +997,51 @@ Reverts all changes to calculator, dashboard, and CSS files. No database migrati
 - Buyout items start with one empty row to signal the feature exists, same pattern as expenses.
 **Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx`
 ---
+
+## Phase 10 — Multi-Act Support
+**Date:** 2026-02-25
+**Context:** Allow multiple artists on a single show, each with their own independent deal structure, settling against the same gross/net pool.
+**Key decisions:**
+- Artist-specific fields (name, deal type, guarantee, percentage, breakeven, deposit, withholding, buyouts) moved into a repeatable `ArtistDeal` array inside FormData.
+- Each artist computes independently against the shared net profit. The venue absorbs whatever remains after all artist payouts.
+- Extracted `computeArtistDealPayout()` as a pure helper to avoid duplicating switch/case logic per artist.
+- Per-artist buyouts in "show expense" mode are collected and added to total expenses before net calculation, affecting all artists' percentage-based deals.
+- Legacy single-artist fields kept in saved inputs for backward compatibility with older shared views.
+- `totalDueToArtist` (merch combined total) only shown for single-artist shows to avoid ambiguity.
+**Changes:**
+- `app/calculator-content.tsx`: Added `ArtistDeal`, `ArtistCalcResult` interfaces. Replaced flat deal fields in FormData with `artists: ArtistDeal[]`. Added `artists: ArtistCalcResult[]` to CalculationResult. Extracted `computeArtistDealPayout()` helper. Refactored `computeSettlement()` to loop over artists array. Added `artistIdCounter` ref and handler functions (`addArtist`, `removeArtist`, `updateArtistField`, `addArtistBuyoutItem`, `removeArtistBuyoutItem`, `updateArtistBuyoutItem`). Updated `loadShow` with backward compat (flat → artists array conversion). Updated `handleSaveShow` to serialize artists array plus legacy compat fields. Form UI now renders per-artist sections with deal params, withholding, and buyouts inside bordered cards with "+ Add Another Artist" button. Results display shows per-artist payout breakdowns with separate sections for multi-act, plus "Total Artist Payouts" summary row. CSV export outputs per-artist blocks with separator rows.
+- `app/s/[token]/page.tsx`: Added `ArtistInput`, `ArtistResultEntry` interfaces to Show type. Deal Structure section renders per-artist when multiple artists exist. Settlement Breakdown handles per-artist payout sections with dividers, falling back to legacy single-artist format for old data.
+- `app/calculator.css`: Added styles for `.calculator-artist-section`, `.calculator-subsection-title`, and `.calculator-artist-result-block`.
+**Supabase impact:** None (artists array stored in existing inputs/results JSONB).
+**Tradeoffs:**
+- Each artist's percentage deal is calculated against the full net (not reduced by other artists' payouts). The venue takes the risk if total payouts exceed net.
+- Buyout mode is per-artist: one artist can have buyouts as expenses while another has them deducted from balance.
+- Single-artist shows work identically to before (one-element artists array with same UX).
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/s/\[token\]/page.tsx app/calculator.css`
+---
+
+## Phase 11 — Notes, Annotations & Countersignature
+**Date:** 2026-02-25
+**Context:** Let both parties document disputes and acknowledge the settlement — the final feature phase of the roadmap.
+**Key decisions:**
+- General notes stored as `notes` string in FormData/inputs/results. Textarea uses existing `.ds-input` classes (no new component needed).
+- Per-expense notes stored as optional `note` field on each ExpenseItem. Displayed inline in results and shared view.
+- Acknowledgments stored in `results.acknowledgments` JSONB array (avoids schema changes). Server action appends via service client.
+- Calculator save preserves existing acknowledgments when updating (reads from current result state).
+- No authentication required for acknowledging — anyone with the share link can do it (link-based access).
+- Dashboard shows most recent acknowledgment as a Badge on each show card.
+**Changes:**
+- `app/calculator-content.tsx`: Added `note?: string` to ExpenseItem interface. Added `notes: string` to FormData. Added `Acknowledgment` interface and `acknowledgments?: Acknowledgment[]` to CalculationResult. Updated `computeSettlement` to pass through notes and expense notes. Updated `updateExpenseItem` to accept "note" field. Form UI has per-expense note sub-rows (visible when expense has content) and a general "Notes" textarea. Results display shows notes block, per-line-item note annotations, and acknowledgment entries. CSV export includes notes and expense annotations. `handleSaveShow` persists notes and preserves existing acknowledgments on re-save.
+- `app/s/[token]/page.tsx`: Added `notes`, `acknowledgments`, and expense `note` fields to Show interface. Notes section rendered between Show Info and Deal Structure. Expense items in both Show Details and Settlement Breakdown include note annotations. AcknowledgeForm client component rendered before the footer.
+- `app/s/[token]/actions.ts`: New server action `acknowledgeSettlement(token, name, email)` — validates inputs, looks up show via share token, appends acknowledgment to results JSONB.
+- `app/s/[token]/AcknowledgeForm.tsx`: New client component with name/email form. Uses `useTransition` for pending state. Displays existing acknowledgments and allows new ones.
+- `app/s/[token]/shared-settlement.css`: Styles for notes, acknowledgment section, form fields, success/error messages. Print styles hide the form.
+- `app/calculator.css`: Styles for expense notes, general notes textarea, inline note annotations, and acknowledgment display in results.
+- `app/dashboard/page.tsx`: Added `Badge` import. Updated select to include `results`. Show cards display multi-artist names from artists array. Acknowledgment status shown as a success Badge with most recent acknowledger name and date.
+**Supabase impact:** None (notes and acknowledgments stored in existing inputs/results JSONB).
+**Tradeoffs:**
+- Acknowledgments in results JSONB means they could theoretically be lost if someone manually edits the results column, but the save flow preserves them.
+- Per-expense notes only appear when the expense row has content (label or amount), keeping the form clean for empty rows.
+- No authentication for acknowledging — deliberate choice matching the roadmap's "link-based access" requirement.
+**Rollback:** `git checkout HEAD -- app/calculator-content.tsx app/calculator.css app/s/\[token\]/page.tsx app/s/\[token\]/shared-settlement.css app/s/\[token\]/actions.ts app/s/\[token\]/AcknowledgeForm.tsx app/dashboard/page.tsx`
+---
