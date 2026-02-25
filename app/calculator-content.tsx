@@ -8,9 +8,12 @@ import { AppAccountMenu, type AppAccountMenuData } from "@/components/ui/AppAcco
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
+import { Popover } from "@/components/ui/Popover";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Icon } from "@/components/ui/Icon";
+import { BreakdownList } from "@/components/ui/BreakdownList";
 import SharePopover from "./components/SharePopover";
 import { computeSettlement, formatCurrency, parseNumber, round2 } from "@/lib/settlement/calculate";
 import "./calculator.css";
@@ -198,6 +201,61 @@ function getDealSummary(
   }
 }
 
+interface DestructiveConfirmPopoverProps {
+  label: string;
+  ariaLabel: string;
+  onConfirm: () => void;
+  className?: string;
+}
+
+function DestructiveConfirmPopover({
+  label,
+  ariaLabel,
+  onConfirm,
+  className,
+}: DestructiveConfirmPopoverProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover
+      trigger={
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={ariaLabel}
+          className={className}
+        >
+          × Remove
+        </Button>
+      }
+      open={open}
+      onOpenChange={setOpen}
+      align="right"
+      panelWidth={300}
+      className="calculator-confirm-popover-panel"
+    >
+      <p className="calculator-confirm-popover-text">
+        Remove {label}? This action cannot be undone.
+      </p>
+      <div className="calculator-confirm-popover-actions">
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => {
+            onConfirm();
+            setOpen(false);
+          }}
+        >
+          Yes, remove
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </Popover>
+  );
+}
+
 function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -248,6 +306,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState<string>("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(false);
 
   useEffect(() => {
     async function loadShow() {
@@ -456,7 +515,6 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   }
 
   function removeTicketTier(id: string) {
-    if (!window.confirm("Remove this ticket tier? This cannot be undone.")) return;
     setFormData((prev) => ({
       ...prev,
       ticketTiers: prev.ticketTiers.filter((tier) => tier.id !== id),
@@ -492,7 +550,6 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   }
 
   function removeExpenseItem(id: string) {
-    if (!window.confirm("Remove this expense line? This cannot be undone.")) return;
     setFormData((prev) => ({
       ...prev,
       expenseItems: prev.expenseItems.filter((item) => item.id !== id),
@@ -525,7 +582,6 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   }
 
   function removeArtist(artistId: string) {
-    if (!window.confirm("Remove this artist and all associated deal inputs?")) return;
     setFormData((prev) => ({
       ...prev,
       artists: prev.artists.filter((a) => a.id !== artistId),
@@ -568,7 +624,6 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
   }
 
   function removeArtistBuyoutItem(artistId: string, buyoutId: string) {
-    if (!window.confirm("Remove this buyout line? This cannot be undone.")) return;
     setFormData((prev) => ({
       ...prev,
       artists: prev.artists.map((a) =>
@@ -772,25 +827,21 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
     URL.revokeObjectURL(url);
   }
 
-  async function handleSaveShow() {
+  async function handleSaveShow(): Promise<string | null> {
     if (!formData.showName.trim()) {
       setSaveStatus('error');
       setSaveMessage('Please enter a show name before saving.');
       setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
-      return;
+      return null;
     }
 
     const freshCalc = computeSettlement(formData);
-    if (!freshCalc.ok) {
-      setSaveStatus('error');
-      setSaveMessage('Cannot save: ' + freshCalc.error);
-      setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
-      return;
+    const isDraftSave = !freshCalc.ok;
+    if (!isDraftSave) {
+      setResult(freshCalc.result);
+      setWarnings(freshCalc.warnings);
+      setResultsStale(false);
     }
-
-    setResult(freshCalc.result);
-    setWarnings(freshCalc.warnings);
-    setResultsStale(false);
 
     setSaveStatus('saving');
     setSaveMessage('');
@@ -846,6 +897,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           show_date: formData.showDate.trim() || null,
           inputs,
           acknowledgments: currentShowId && result?.acknowledgments?.length ? result.acknowledgments : undefined,
+          allowDraft: isDraftSave,
         }),
       });
 
@@ -854,18 +906,23 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
         throw new Error(data.error || "Failed to save");
       }
 
-      if (!currentShowId) {
-        setCurrentShowId(data.showId);
-      }
+      const savedShowId = data.showId as string;
+      if (!currentShowId) setCurrentShowId(savedShowId);
       setSaveStatus('success');
-      setSaveMessage(currentShowId ? 'Show updated successfully!' : 'Show saved successfully!');
+      if (isDraftSave) {
+        setSaveMessage("Draft saved. Complete required fields to finalize settlement.");
+      } else {
+        setSaveMessage(currentShowId ? 'Settlement updated successfully!' : 'Settlement saved successfully!');
+      }
       setHasUnsavedChanges(false);
       setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
+      return savedShowId;
     } catch (error) {
       console.error('Error saving show:', error);
       setSaveStatus('error');
       setSaveMessage('Failed to save show. Please try again.');
       setTimeout(() => { setSaveMessage(''); setSaveStatus('idle'); }, 4000);
+      return null;
     }
   }
 
@@ -888,12 +945,42 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
 
   function handleBackToDashboard() {
     if (hasUnsavedChanges) {
-      const shouldLeave = window.confirm(
-        "You have unsaved changes. Leave this page and lose unsaved edits?"
-      );
-      if (!shouldLeave) return;
+      setPendingNavigation(true);
+      return;
     }
     router.push("/dashboard");
+  }
+
+  function handleConfirmLeave() {
+    setPendingNavigation(false);
+    router.push("/dashboard");
+  }
+
+  async function handleSaveAndShare() {
+    const showId = await handleSaveShow();
+    if (!showId) return;
+
+    try {
+      const createRes = await fetch("/api/share-links/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ showId }),
+      });
+
+      if (!createRes.ok) throw new Error("Failed to create share link");
+      const createData = await createRes.json();
+      const token = createData.token as string;
+      const url = `${window.location.origin}/s/${token}`;
+      await navigator.clipboard.writeText(url);
+      setSaveStatus("success");
+      setSaveMessage("Share link copied. You can send it now.");
+      setTimeout(() => { setSaveMessage(""); setSaveStatus("idle"); }, 4000);
+    } catch (error) {
+      console.error("Error sharing show:", error);
+      setSaveStatus("error");
+      setSaveMessage("Saved, but could not create share link. Try again.");
+      setTimeout(() => { setSaveMessage(""); setSaveStatus("idle"); }, 4000);
+    }
   }
 
   return (
@@ -926,12 +1013,14 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 )}
                 <Button
                   onClick={handleSaveShow}
-                  disabled={!result || saveStatus === 'saving'}
+                  disabled={saveStatus === 'saving'}
                   variant="primary"
                   size="sm"
                   loading={saveStatus === 'saving'}
                 >
-                  {currentShowId ? 'Update Settlement' : 'Save Settlement'}
+                  {result && !resultsStale
+                    ? (currentShowId ? "Update Settlement" : "Save Settlement")
+                    : "Save Draft"}
                 </Button>
               </div>
               {currentShowId && result && (
@@ -943,6 +1032,18 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                   />
                 </div>
               )}
+              {!currentShowId && result && (
+                <div className="calculator-header-actions-row">
+                  <Button
+                    onClick={handleSaveAndShare}
+                    variant="secondary"
+                    size="sm"
+                    disabled={saveStatus === "saving" || resultsStale}
+                  >
+                    Save & Copy Share Link
+                  </Button>
+                </div>
+              )}
             </div>
           }
         />
@@ -950,6 +1051,20 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
         {saveMessage && (
           <div className={`calculator-save-status ${saveStatus === 'success' ? 'success' : 'error'}`}>
             {saveMessage}
+          </div>
+        )}
+
+        {pendingNavigation && (
+          <div className="calculator-remove-confirm">
+            <p>You have unsaved changes. Leave this page and discard edits?</p>
+            <div className="calculator-remove-confirm-actions">
+              <Button variant="danger" size="sm" onClick={handleConfirmLeave}>
+                Leave Without Saving
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setPendingNavigation(false)}>
+                Stay Here
+              </Button>
+            </div>
           </div>
         )}
 
@@ -970,12 +1085,14 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
               <div key={tier.id} className="calculator-tier-row">
                 <Input
                   label={index === 0 ? "Tier Name" : undefined}
+                  aria-label={`Tier ${index + 1} name`}
                   value={tier.name}
                   onChange={(e) => updateTicketTier(tier.id, "name", e.target.value)}
                   placeholder="ex: General Admission"
                 />
                 <Input
                   label={index === 0 ? "Price ($)" : undefined}
+                  aria-label={`Tier ${index + 1} price`}
                   type="number"
                   value={tier.price}
                   onChange={(e) => updateTicketTier(tier.id, "price", e.target.value)}
@@ -985,6 +1102,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 />
                 <Input
                   label={index === 0 ? "Sold" : undefined}
+                  aria-label={`Tier ${index + 1} sold`}
                   type="number"
                   value={tier.sold}
                   onChange={(e) => updateTicketTier(tier.id, "sold", e.target.value)}
@@ -994,6 +1112,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 />
                 <Input
                   label={index === 0 ? "Comps" : undefined}
+                  aria-label={`Tier ${index + 1} comps`}
                   type="number"
                   value={tier.comps}
                   onChange={(e) => updateTicketTier(tier.id, "comps", e.target.value)}
@@ -1002,15 +1121,12 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                   step={1}
                 />
                 {formData.ticketTiers.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeTicketTier(tier.id)}
-                    aria-label={`Remove ${tier.name || "tier"}`}
+                  <DestructiveConfirmPopover
+                    label={tier.name || "this tier"}
+                    ariaLabel={`Remove ${tier.name || "tier"}`}
+                    onConfirm={() => removeTicketTier(tier.id)}
                     className="calculator-tier-remove"
-                  >
-                    × Remove
-                  </Button>
+                  />
                 )}
               </div>
             ))}
@@ -1064,6 +1180,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
               <div key={item.id} className="calculator-expense-row">
                 <Input
                   label={index === 0 ? "Expense" : undefined}
+                  aria-label={`Expense ${index + 1} label`}
                   value={item.label}
                   onChange={(e) => updateExpenseItem(item.id, "label", e.target.value)}
                   placeholder="ex: Sound"
@@ -1071,6 +1188,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                 />
                 <Input
                   label={index === 0 ? "Amount ($)" : undefined}
+                  aria-label={`Expense ${index + 1} amount`}
                   type="number"
                   value={item.amount}
                   onChange={(e) => updateExpenseItem(item.id, "amount", e.target.value)}
@@ -1079,20 +1197,19 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                   step={0.01}
                 />
                 {formData.expenseItems.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeExpenseItem(item.id)}
-                    aria-label={`Remove ${item.label || "expense"}`}
+                  <DestructiveConfirmPopover
+                    label={item.label || "this expense line"}
+                    ariaLabel={`Remove ${item.label || "expense"}`}
+                    onConfirm={() => removeExpenseItem(item.id)}
                     className="calculator-expense-remove"
-                  >
-                    × Remove
-                  </Button>
+                  />
                 )}
                 {(item.label.trim() || parseNumber(item.amount) > 0) && (
                   <div className="calculator-expense-note">
-                    <input
-                      className="ds-input ds-input-sm calculator-note-input"
+                    <Input
+                      size="sm"
+                      className="calculator-note-input"
+                      aria-label={`Expense ${index + 1} note`}
                       value={item.note || ""}
                       onChange={(e) => updateExpenseItem(item.id, "note", e.target.value)}
                       placeholder="Add note (e.g., artist disputes this charge)"
@@ -1116,15 +1233,12 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
               <h3 className="calculator-section-title">
                 {formData.artists.length > 1 ? `Artist ${artistIndex + 1} — Deal & Payouts` : "Artist — Deal & Payouts"}
                 {formData.artists.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeArtist(artist.id)}
-                    aria-label={`Remove ${artist.artistName || `Artist ${artistIndex + 1}`}`}
-                    style={{ marginLeft: "auto" }}
-                  >
-                    × Remove
-                  </Button>
+                  <DestructiveConfirmPopover
+                    label={artist.artistName || `Artist ${artistIndex + 1}`}
+                    ariaLabel={`Remove ${artist.artistName || `Artist ${artistIndex + 1}`}`}
+                    onConfirm={() => removeArtist(artist.id)}
+                    className="calculator-artist-remove"
+                  />
                 )}
               </h3>
 
@@ -1208,6 +1322,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                   <div key={item.id} className="calculator-expense-row">
                     <Input
                       label={index === 0 ? "Buyout" : undefined}
+                      aria-label={`${artist.artistName || `Artist ${artistIndex + 1}`} buyout ${index + 1} label`}
                       value={item.label}
                       onChange={(e) => updateArtistBuyoutItem(artist.id, item.id, "label", e.target.value)}
                       placeholder="ex: Catering Buyout"
@@ -1215,6 +1330,7 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                     />
                     <Input
                       label={index === 0 ? "Amount ($)" : undefined}
+                      aria-label={`${artist.artistName || `Artist ${artistIndex + 1}`} buyout ${index + 1} amount`}
                       type="number"
                       value={item.amount}
                       onChange={(e) => updateArtistBuyoutItem(artist.id, item.id, "amount", e.target.value)}
@@ -1223,15 +1339,12 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                       step={0.01}
                     />
                     {artist.buyoutItems.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeArtistBuyoutItem(artist.id, item.id)}
-                        aria-label={`Remove ${item.label || "buyout"}`}
+                      <DestructiveConfirmPopover
+                        label={item.label || "this buyout line"}
+                        ariaLabel={`Remove ${item.label || "buyout"}`}
+                        onConfirm={() => removeArtistBuyoutItem(artist.id, item.id)}
                         className="calculator-expense-remove"
-                      >
-                        × Remove
-                      </Button>
+                      />
                     )}
                   </div>
                 ))}
@@ -1259,21 +1372,19 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
           </Button>
 
           <h3 className="calculator-section-title">Notes (optional)</h3>
-          <div className="ds-input-wrapper">
-            <textarea
-              className="ds-input ds-input-md calculator-notes-textarea"
-              name="notes"
-              value={formData.notes}
-              onChange={(e) => {
-                setFormData((prev) => ({ ...prev, notes: e.target.value }));
-                if (result) setResultsStale(true);
-                setHasUnsavedChanges(true);
-              }}
-              placeholder="General settlement notes, disputes, or special terms&#10;e.g., &quot;Artist provided own sound engineer — $200 credit applied&quot;"
-              rows={3}
-            />
-            <p className="ds-input-hint">Visible on the settlement summary and shared report</p>
-          </div>
+          <Textarea
+            name="notes"
+            value={formData.notes}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, notes: e.target.value }));
+              if (result) setResultsStale(true);
+              setHasUnsavedChanges(true);
+            }}
+            placeholder="General settlement notes, disputes, or special terms&#10;e.g., &quot;Artist provided own sound engineer — $200 credit applied&quot;"
+            rows={3}
+            hint="Visible on the settlement summary and shared report"
+            className="calculator-notes-textarea"
+          />
 
           <h3 className="calculator-section-title">Merch (optional)</h3>
           <div className="calculator-form-row">
@@ -1325,14 +1436,13 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
             <Card className="results-card" variant="elevated" padding="lg">
               <h2>Settlement Summary</h2>
               {(result.totalDueToArtist != null || result.balanceDue != null) && (
-                <div className="calculator-result-row result-row highlight balance-due balance-due-callout">
-                  <span className="label">
-                    Amount due tonight
-                  </span>
-                  <span className="value">
-                    {formatCurrency(result.totalDueToArtist ?? result.balanceDue ?? 0)}
-                  </span>
-                </div>
+                <BreakdownList className="calculator-due-tonight">
+                  <BreakdownList.Row
+                    label="Amount due tonight"
+                    value={formatCurrency(result.totalDueToArtist ?? result.balanceDue ?? 0)}
+                    variant="highlight"
+                  />
+                </BreakdownList>
               )}
               {(() => {
                 const names = (result.artists || []).map((a) => a.artistName).filter(Boolean).join(", ");
@@ -1350,79 +1460,82 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                   <strong>Notes:</strong> {result.notes}
                 </div>
               )}
-              {result.ticketTiers && result.ticketTiers.length > 1 ? (
-                <>
-                  {result.ticketTiers.map((tier, index) => (
-                    <div key={index} className="calculator-result-row result-row">
-                      <span className="label">{tier.name} ({tier.sold} × {formatCurrency(tier.price)})</span>
-                      <span className="value">{formatCurrency(tier.revenue)}</span>
-                    </div>
-                  ))}
-                  <div className="calculator-result-row result-row tier-subtotal">
-                    <span className="label">
-                      Gross Revenue ({result.totalTicketsSold} sold{result.totalComps ? `, ${result.totalComps} comps` : ''})
-                    </span>
-                    <span className="value">{formatCurrency(result.grossRevenue)}</span>
-                  </div>
-                </>
-              ) : (
-                <div className="calculator-result-row result-row">
-                  <span className="label">
-                    Gross Revenue{result.totalTicketsSold ? ` (${result.totalTicketsSold} sold${result.totalComps ? `, ${result.totalComps} comps` : ''})` : ''}
-                  </span>
-                  <span className="value">{formatCurrency(result.grossRevenue)}</span>
-                </div>
-              )}
-              <div className="calculator-result-row result-row">
-                <span className="label">
-                  Tax ({formData.taxRate || '0'}%{formData.taxMode === 'inclusive' ? ', included in price' : ''})
-                </span>
-                <span className="value">−{formatCurrency(result.taxAmount)}</span>
-              </div>
-              {result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === 'off_top' && (
-                <div className="calculator-result-row result-row">
-                  <span className="label">CC Processing Fees ({formData.ccFeeRate}%)</span>
-                  <span className="value">−{formatCurrency(result.ccFees)}</span>
-                </div>
-              )}
-              {result.expenseItems && result.expenseItems.length > 0 ? (
-                <>
-                  {result.expenseItems.map((item, index) => (
-                    <div key={index} className="calculator-result-row result-row">
-                      <span className="label">
-                        {item.label}
-                        {item.note && <span className="calculator-line-note">{item.note}</span>}
-                      </span>
-                      <span className="value">−{formatCurrency(item.amount)}</span>
-                    </div>
-                  ))}
-                  {(result.artists || []).map((ar) => {
-                    const fa = formData.artists[result.artists.indexOf(ar)];
-                    if (fa?.buyoutMode !== "show_expense" || !ar.buyoutItems) return null;
-                    return ar.buyoutItems.map((item, bi) => (
-                      <div key={`buyout-exp-${ar.artistName}-${bi}`} className="calculator-result-row result-row">
-                        <span className="label">{item.label} (buyout{(result.artists || []).length > 1 ? ` — ${ar.artistName}` : ''})</span>
-                        <span className="value">−{formatCurrency(item.amount)}</span>
-                      </div>
-                    ));
-                  })}
-                  {result.expenseItems.length > 1 && (
-                    <div className="calculator-result-row result-row expense-subtotal">
-                      <span className="label">Total Expenses</span>
-                      <span className="value">−{formatCurrency(result.totalExpenses)}</span>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="calculator-result-row result-row">
-                  <span className="label">Expenses</span>
-                  <span className="value">−{formatCurrency(result.totalExpenses)}</span>
-                </div>
-              )}
-              <div className="calculator-result-row result-row highlight">
-                <span className="label">Net</span>
-                <span className="value">{formatCurrency(result.netProfit)}</span>
-              </div>
+              <BreakdownList>
+                {result.ticketTiers && result.ticketTiers.length > 1 ? (
+                  <>
+                    {result.ticketTiers.map((tier, index) => (
+                      <BreakdownList.Row
+                        key={index}
+                        label={`${tier.name} (${tier.sold} × ${formatCurrency(tier.price)})`}
+                        value={formatCurrency(tier.revenue)}
+                      />
+                    ))}
+                    <BreakdownList.Row
+                      label={`Gross Revenue (${result.totalTicketsSold} sold${result.totalComps ? `, ${result.totalComps} comps` : ''})`}
+                      value={formatCurrency(result.grossRevenue)}
+                    />
+                  </>
+                ) : (
+                  <BreakdownList.Row
+                    label={`Gross Revenue${result.totalTicketsSold ? ` (${result.totalTicketsSold} sold${result.totalComps ? `, ${result.totalComps} comps` : ''})` : ''}`}
+                    value={formatCurrency(result.grossRevenue)}
+                  />
+                )}
+                <BreakdownList.Row
+                  label={`Tax (${formData.taxRate || '0'}%${formData.taxMode === 'inclusive' ? ', included in price' : ''})`}
+                  value={`−${formatCurrency(result.taxAmount)}`}
+                  variant="negative"
+                />
+                {result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === 'off_top' && (
+                  <BreakdownList.Row
+                    label={`CC Processing Fees (${formData.ccFeeRate}%)`}
+                    value={`−${formatCurrency(result.ccFees)}`}
+                    variant="negative"
+                  />
+                )}
+                {result.expenseItems && result.expenseItems.length > 0 ? (
+                  <>
+                    {result.expenseItems.map((item, index) => (
+                      <BreakdownList.Row
+                        key={index}
+                        label={item.note ? `${item.label} — ${item.note}` : item.label}
+                        value={`−${formatCurrency(item.amount)}`}
+                        variant="negative"
+                      />
+                    ))}
+                    {(result.artists || []).map((ar) => {
+                      const fa = formData.artists[result.artists.indexOf(ar)];
+                      if (fa?.buyoutMode !== "show_expense" || !ar.buyoutItems) return null;
+                      return ar.buyoutItems.map((item, bi) => (
+                        <BreakdownList.Row
+                          key={`buyout-exp-${ar.artistName}-${bi}`}
+                          label={`${item.label} (buyout${(result.artists || []).length > 1 ? ` — ${ar.artistName}` : ''})`}
+                          value={`−${formatCurrency(item.amount)}`}
+                          variant="negative"
+                        />
+                      ));
+                    })}
+                    {result.expenseItems.length > 1 && (
+                      <BreakdownList.Row
+                        label="Total Expenses"
+                        value={`−${formatCurrency(result.totalExpenses)}`}
+                        variant="negative"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <BreakdownList.Row
+                    label="Expenses"
+                    value={`−${formatCurrency(result.totalExpenses)}`}
+                    variant="negative"
+                  />
+                )}
+                <BreakdownList.Row
+                  label="Net"
+                  value={formatCurrency(result.netProfit)}
+                  variant="highlight"
+                />
+              </BreakdownList>
 
               {(result.artists || []).map((ar, arIdx) => {
                 const fa = formData.artists[arIdx];
@@ -1436,116 +1549,130 @@ function CalculatorInner({ userId, userEmail, accountMenuData }: CalculatorConte
                     <p className="calculator-deal-summary">
                       {getDealSummary(ar, fa, result.netProfit)}
                     </p>
-                    {ar.overage != null && ar.breakeven != null && (
-                      <>
-                        <div className="calculator-result-row result-row">
-                          <span className="label">Guarantee</span>
-                          <span className="value">{formatCurrency(ar.artistPayout - ar.overage)}</span>
-                        </div>
-                        <div className="calculator-result-row result-row">
-                          <span className="label">Breakeven Point</span>
-                          <span className="value">{formatCurrency(ar.breakeven)}</span>
-                        </div>
-                        <div className="calculator-result-row result-row">
-                          <span className="label">Back-End Overage</span>
-                          <span className="value">{formatCurrency(ar.overage)}</span>
-                        </div>
-                      </>
-                    )}
-                    <div className="calculator-result-row result-row highlight artist-payout">
-                      <span className="label">
-                        {isMulti ? `${ar.artistName} Payout` : 'Artist Payout'}
-                        {ar.overage != null && ' (Guarantee + Overage)'}
-                        {ar.dealType === 'percentage_of_gross' && ` (${fa?.percentage || ''}% of Gross)`}
-                        {ar.dealType === 'door_deal' && ` (${fa?.percentage || ''}% of Gross After Tax)`}
-                      </span>
-                      <span className="value">{formatCurrency(ar.artistPayout)}</span>
-                    </div>
-                    {ar.withholdingAmount != null && ar.withholdingAmount > 0 && (
-                      <div className="calculator-result-row result-row">
-                        <span className="label">
-                          Withholding Tax ({fa?.withholdingRate || ''}%{ar.withholdingState ? `, ${ar.withholdingState}` : ''})
-                        </span>
-                        <span className="value">−{formatCurrency(ar.withholdingAmount)}</span>
-                      </div>
-                    )}
-                    {ar.buyoutItems && ar.buyoutItems.length > 0 && fa?.buyoutMode === 'deduct_from_balance' && (
-                      ar.buyoutItems.map((item, index) => (
-                        <div key={`buyout-deduct-${index}`} className="calculator-result-row result-row">
-                          <span className="label">{item.label}</span>
-                          <span className="value">−{formatCurrency(item.amount)}</span>
-                        </div>
-                      ))
-                    )}
-                    {hasDeductions && (
-                      <>
-                        {ar.deposit > 0 && (
-                          <div className="calculator-result-row result-row">
-                            <span className="label">Deposit Paid</span>
-                            <span className="value">−{formatCurrency(ar.deposit)}</span>
-                          </div>
-                        )}
-                        <div className={`calculator-result-row result-row highlight ${ar.balanceDue < 0 ? 'overpayment' : 'balance-due'}`}>
-                          <span className="label">
-                            {ar.balanceDue < 0 ? 'Overpayment (due back to promoter)' : 'Balance Due at Settlement'}
-                          </span>
-                          <span className="value">{formatCurrency(Math.abs(ar.balanceDue))}</span>
-                        </div>
-                      </>
-                    )}
+                    <BreakdownList>
+                      {ar.overage != null && ar.breakeven != null && (
+                        <>
+                          <BreakdownList.Row
+                            label="Guarantee"
+                            value={formatCurrency(ar.artistPayout - ar.overage)}
+                          />
+                          <BreakdownList.Row
+                            label="Breakeven Point"
+                            value={formatCurrency(ar.breakeven)}
+                          />
+                          <BreakdownList.Row
+                            label="Back-End Overage"
+                            value={formatCurrency(ar.overage)}
+                          />
+                        </>
+                      )}
+                      <BreakdownList.Row
+                        label={
+                          `${isMulti ? `${ar.artistName} Payout` : "Artist Payout"}` +
+                          `${ar.overage != null ? " (Guarantee + Overage)" : ""}` +
+                          `${ar.dealType === "percentage_of_gross" ? ` (${fa?.percentage || ""}% of Gross)` : ""}` +
+                          `${ar.dealType === "door_deal" ? ` (${fa?.percentage || ""}% of Gross After Tax)` : ""}`
+                        }
+                        value={formatCurrency(ar.artistPayout)}
+                        variant="success"
+                      />
+                      {ar.withholdingAmount != null && ar.withholdingAmount > 0 && (
+                        <BreakdownList.Row
+                          label={`Withholding Tax (${fa?.withholdingRate || ""}%${ar.withholdingState ? `, ${ar.withholdingState}` : ""})`}
+                          value={`−${formatCurrency(ar.withholdingAmount)}`}
+                          variant="negative"
+                        />
+                      )}
+                      {ar.buyoutItems && ar.buyoutItems.length > 0 && fa?.buyoutMode === "deduct_from_balance" && (
+                        ar.buyoutItems.map((item, index) => (
+                          <BreakdownList.Row
+                            key={`buyout-deduct-${index}`}
+                            label={item.label}
+                            value={`−${formatCurrency(item.amount)}`}
+                            variant="negative"
+                          />
+                        ))
+                      )}
+                      {hasDeductions && ar.deposit > 0 && (
+                        <BreakdownList.Row
+                          label="Deposit Paid"
+                          value={`−${formatCurrency(ar.deposit)}`}
+                          variant="negative"
+                        />
+                      )}
+                      {hasDeductions && (
+                        <BreakdownList.Row
+                          label={ar.balanceDue < 0 ? "Overpayment (due back to promoter)" : "Balance Due at Settlement"}
+                          value={formatCurrency(Math.abs(ar.balanceDue))}
+                          variant={ar.balanceDue < 0 ? "warning" : "highlight"}
+                        />
+                      )}
+                    </BreakdownList>
                   </div>
                 );
               })}
 
               {(result.artists || []).length > 1 && (
-                <div className="calculator-result-row result-row highlight" style={{ marginTop: "1rem" }}>
-                  <span className="label">Total Artist Payouts</span>
-                  <span className="value">{formatCurrency(result.artistPayout)}</span>
-                </div>
+                <BreakdownList className="calculator-summary-breakdown">
+                  <BreakdownList.Row
+                    label="Total Artist Payouts"
+                    value={formatCurrency(result.artistPayout)}
+                    variant="success"
+                  />
+                </BreakdownList>
               )}
 
-              {result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === 'expense' && (
-                <div className="calculator-result-row result-row">
-                  <span className="label">CC Processing Fees ({formData.ccFeeRate}%, venue cost)</span>
-                  <span className="value">−{formatCurrency(result.ccFees)}</span>
-                </div>
-              )}
-              <div className={`calculator-result-row result-row highlight ${result.venuePayout < 0 ? 'venue-loss' : 'venue-payout'}`}>
-                <span className="label">
-                  {result.venuePayout < 0 ? 'Venue Loss' : 'Promoter/House Settlement'}
-                </span>
-                <span className="value">{result.venuePayout < 0 ? '−' : ''}{formatCurrency(Math.abs(result.venuePayout))}</span>
-              </div>
+              <BreakdownList className="calculator-summary-breakdown">
+                {result.ccFees != null && result.ccFees > 0 && formData.ccFeeMode === 'expense' && (
+                  <BreakdownList.Row
+                    label={`CC Processing Fees (${formData.ccFeeRate}%, venue cost)`}
+                    value={`−${formatCurrency(result.ccFees)}`}
+                    variant="negative"
+                  />
+                )}
+                <BreakdownList.Row
+                  label={result.venuePayout < 0 ? 'Venue Loss' : 'Promoter/House Settlement'}
+                  value={`${result.venuePayout < 0 ? '−' : ''}${formatCurrency(Math.abs(result.venuePayout))}`}
+                  variant="warning"
+                />
+              </BreakdownList>
               {result.merchGross != null && result.merchGross > 0 && (
                 <>
                   <h3 className="calculator-section-title" style={{ marginTop: "1.5rem" }}>Merch Settlement</h3>
-                  <div className="calculator-result-row result-row">
-                    <span className="label">Gross Merch Sales</span>
-                    <span className="value">{formatCurrency(result.merchGross)}</span>
-                  </div>
-                  <div className="calculator-result-row result-row">
-                    <span className="label">Venue Merch Cut ({formData.merchVenuePercent || '0'}%)</span>
-                    <span className="value">−{formatCurrency(result.merchVenueCut ?? 0)}</span>
-                  </div>
-                  <div className="calculator-result-row result-row highlight artist-payout">
-                    <span className="label">Net Merch to Artist</span>
-                    <span className="value">{formatCurrency(result.merchNetToArtist ?? 0)}</span>
-                  </div>
+                  <BreakdownList>
+                    <BreakdownList.Row
+                      label="Gross Merch Sales"
+                      value={formatCurrency(result.merchGross)}
+                    />
+                    <BreakdownList.Row
+                      label={`Venue Merch Cut (${formData.merchVenuePercent || '0'}%)`}
+                      value={`−${formatCurrency(result.merchVenueCut ?? 0)}`}
+                      variant="negative"
+                    />
+                    <BreakdownList.Row
+                      label="Net Merch to Artist"
+                      value={formatCurrency(result.merchNetToArtist ?? 0)}
+                      variant="success"
+                    />
+                  </BreakdownList>
                   {result.totalDueToArtist != null && (
                     <>
                       <h3 className="calculator-section-title" style={{ marginTop: "1.5rem" }}>Total</h3>
-                      <div className="calculator-result-row result-row">
-                        <span className="label">Show Balance Due</span>
-                        <span className="value">{formatCurrency(result.deposit > 0 ? result.balanceDue : result.artistPayout)}</span>
-                      </div>
-                      <div className="calculator-result-row result-row">
-                        <span className="label">Net Merch to Artist</span>
-                        <span className="value">{formatCurrency(result.merchNetToArtist ?? 0)}</span>
-                      </div>
-                      <div className="calculator-result-row result-row highlight artist-payout">
-                        <span className="label">Total Due to Artist</span>
-                        <span className="value">{formatCurrency(result.totalDueToArtist)}</span>
-                      </div>
+                      <BreakdownList>
+                        <BreakdownList.Row
+                          label="Show Balance Due"
+                          value={formatCurrency(result.deposit > 0 ? result.balanceDue : result.artistPayout)}
+                        />
+                        <BreakdownList.Row
+                          label="Net Merch to Artist"
+                          value={formatCurrency(result.merchNetToArtist ?? 0)}
+                        />
+                        <BreakdownList.Row
+                          label="Total Due to Artist"
+                          value={formatCurrency(result.totalDueToArtist)}
+                          variant="success"
+                        />
+                      </BreakdownList>
                     </>
                   )}
                 </>

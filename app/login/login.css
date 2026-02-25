@@ -36,6 +36,13 @@
   font-size: var(--text-sm);
 }
 
+.auth-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 /* Mode Toggle (Sign In / Sign Up) */
 .auth-mode-toggle {
   display: flex;
@@ -103,32 +110,6 @@
 .auth-method-toggle button:not(.active):hover {
   background: var(--color-surface-strong);
   color: var(--color-text-muted);
-}
-
-/* Submit Button */
-.auth-submit-btn {
-  width: 100%;
-  padding: 1rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
-  margin-top: 0.5rem;
-}
-
-.auth-submit-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.auth-submit-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.auth-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Helper text */

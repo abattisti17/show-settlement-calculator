@@ -22,7 +22,7 @@ export interface BreakdownListRowProps {
 export function BreakdownList({ children, className }: BreakdownListProps) {
   return (
     <div className={["ds-breakdown", className].filter(Boolean).join(" ")}>
-      <div className="ds-breakdown-list">{children}</div>
+      <div className="ds-breakdown-list" role="list">{children}</div>
     </div>
   );
 }

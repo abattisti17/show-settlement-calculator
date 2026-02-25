@@ -51,7 +51,7 @@
 }
 
 .landing-hero h1 {
-  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-size: var(--text-4xl);
   font-weight: 700;
   color: var(--color-text-strong);
   margin-bottom: 1rem;
@@ -75,16 +75,7 @@
 
 .landing-cta-primary,
 .landing-cta-secondary {
-  padding: 0.85rem 1.6rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-md);
   text-decoration: none;
-  transition: transform 0.15s, box-shadow 0.15s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .landing-cta-primary:hover,
@@ -218,7 +209,7 @@
 .landing-list {
   list-style: none;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.75rem;
   color: var(--color-text);
   font-size: var(--text-base);
 }
@@ -304,6 +295,10 @@
 }
 
 @media (max-width: 720px) {
+  .landing-hero h1 {
+    font-size: var(--text-3xl);
+  }
+
   .landing-hero {
     padding: 2rem 1.5rem;
   }

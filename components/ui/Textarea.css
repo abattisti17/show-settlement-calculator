@@ -1,0 +1,70 @@
+.ds-textarea-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ds-textarea-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ds-textarea {
+  width: 100%;
+  font-family: inherit;
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-input-border);
+  color: var(--color-text-strong);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+}
+
+.ds-textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.ds-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.ds-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ds-textarea-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-sm);
+}
+
+.ds-textarea-md {
+  padding: 0.625rem 1rem;
+  font-size: var(--text-base);
+}
+
+.ds-textarea-lg {
+  padding: 0.75rem 1rem;
+  font-size: var(--text-base);
+}
+
+.ds-textarea-error .ds-textarea {
+  border-color: var(--color-error);
+}
+
+.ds-textarea-error .ds-textarea:focus {
+  box-shadow: 0 0 0 3px var(--color-error-bg);
+}
+
+.ds-textarea-error-msg {
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+.ds-textarea-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

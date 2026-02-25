@@ -109,7 +109,7 @@ export default async function DashboardPage() {
           title={hasAccess ? "Your Shows" : "Welcome to Your Dashboard"}
           action={
             hasAccess ? (
-              <Button as="a" href="/" variant="primary" className="create-show-btn">
+              <Button as="a" href="/" variant="primary" size="md">
                 Create New Show
               </Button>
             ) : undefined
@@ -174,7 +174,7 @@ export default async function DashboardPage() {
                 </div>
                 <h2>No shows yet</h2>
                 <p>Create your first show to start tracking settlements</p>
-                <Button as="a" href="/" variant="primary" className="create-show-btn-large">
+                <Button as="a" href="/" variant="primary" size="lg">
                   Create New Show
                 </Button>
               </Card>

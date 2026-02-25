@@ -121,7 +121,7 @@ export function formatCurrency(amount: number): string {
 
 export function parseNumber(value: string): number {
   const parsed = parseFloat(value);
-  return isNaN(parsed) ? 0 : parsed;
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export function round2(n: number): number {
@@ -133,6 +133,24 @@ function warnIfNotNumeric(value: string, fieldName: string, warnings: string[]) 
   if (trimmed && isNaN(parseFloat(trimmed))) {
     warnings.push(`"${fieldName}" contains "${trimmed}" — treated as 0.`);
   }
+}
+
+function parseNonNegative(value: string, fieldName: string, warnings: string[]): number {
+  const parsed = parseNumber(value);
+  if (parsed < 0) {
+    warnings.push(`${fieldName} is negative — treated as 0.`);
+    return 0;
+  }
+  return parsed;
+}
+
+function parsePercent(value: string, fieldName: string, warnings: string[]): number {
+  const parsed = parseNonNegative(value, fieldName, warnings);
+  if (parsed > 100) {
+    warnings.push(`${fieldName} is above 100% — capped at 100%.`);
+    return 100;
+  }
+  return parsed;
 }
 
 function computeArtistDealPayout(
@@ -182,8 +200,8 @@ function computeArtistDealPayout(
 
 export function computeSettlement(data: CalculationInput): ComputeOutput {
   const warnings: string[] = [];
-  const taxRate = parseNumber(data.taxRate);
-  const ccFeeRate = parseNumber(data.ccFeeRate);
+  const taxRate = parsePercent(data.taxRate, "Tax Rate", warnings);
+  const ccFeeRate = parsePercent(data.ccFeeRate, "CC Fee Rate", warnings);
   const ccOffTop = data.ccFeeMode === "off_top";
   const taxIsInclusive = data.taxMode === "inclusive";
 
@@ -196,8 +214,8 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
       warnIfNotNumeric(t.price, `${t.name || "Tier"} Price`, warnings);
       warnIfNotNumeric(t.sold, `${t.name || "Tier"} Tickets Sold`, warnings);
       const price = round2(parseNumber(t.price));
-      const sold = parseNumber(t.sold);
-      const comps = parseNumber(t.comps ?? "0");
+      const sold = parseNonNegative(t.sold, `${t.name || "Tier"} Tickets Sold`, warnings);
+      const comps = parseNonNegative(t.comps ?? "0", `${t.name || "Tier"} Comps`, warnings);
       return { name: t.name.trim() || "General Admission", price, sold, comps, revenue: round2(price * sold) };
     });
 
@@ -222,10 +240,7 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
     .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
     .map((item) => {
       warnIfNotNumeric(item.amount, `Expense "${item.label.trim() || "Unlabeled"}"`, warnings);
-      const amt = round2(parseNumber(item.amount));
-      if (amt < 0) {
-        warnings.push(`Expense "${item.label.trim() || "Unlabeled"}" has negative amount. Verify numbers.`);
-      }
+      const amt = round2(parseNonNegative(item.amount, `Expense "${item.label.trim() || "Unlabeled"}"`, warnings));
       return {
         label: item.label.trim() || "Unlabeled Expense",
         amount: amt,
@@ -240,6 +255,9 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
       for (const b of artist.buyoutItems) {
         if (b.label.trim() || parseNumber(b.amount) > 0) {
           const amt = round2(parseNumber(b.amount));
+          if (amt < 0) {
+            warnings.push(`${artist.artistName || "Artist"} buyout "${b.label || "Unlabeled"}" is negative — ignored.`);
+          }
           if (amt > 0) totalExpenses = round2(totalExpenses + amt);
         }
       }
@@ -262,8 +280,8 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
 
   for (const artist of data.artists) {
     const aName = artist.artistName.trim() || `Artist ${data.artists.indexOf(artist) + 1}`;
-    const guarantee = round2(parseNumber(artist.guarantee));
-    const percentage = parseNumber(artist.percentage);
+    const guarantee = round2(parseNonNegative(artist.guarantee, `${aName} Guarantee`, warnings));
+    const percentage = parsePercent(artist.percentage, `${aName} Percentage`, warnings);
 
     warnIfNotNumeric(artist.guarantee, `${aName} Guarantee`, warnings);
     warnIfNotNumeric(artist.percentage, `${aName} Percentage`, warnings);
@@ -289,7 +307,7 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
       return { ok: false, error: `${aName}: Please enter both guarantee amount and back-end percentage.` };
     }
 
-    const breakevenInput = round2(parseNumber(artist.breakeven));
+    const breakevenInput = round2(parseNonNegative(artist.breakeven, `${aName} Breakeven`, warnings));
     const { artistPayout, overage, breakeven: bk } = computeArtistDealPayout(
       artist.dealType,
       guarantee,
@@ -305,17 +323,14 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
       .filter((item) => item.label.trim() || parseNumber(item.amount) > 0)
       .map((item) => {
         warnIfNotNumeric(item.amount, `${aName} Buyout "${item.label.trim() || "Unlabeled"}"`, warnings);
-        const amt = round2(parseNumber(item.amount));
-        if (amt < 0) {
-          warnings.push(`${aName} Buyout "${item.label.trim() || "Unlabeled"}" has negative amount. Verify numbers.`);
-        }
+        const amt = round2(parseNonNegative(item.amount, `${aName} Buyout "${item.label.trim() || "Unlabeled"}"`, warnings));
         return { label: item.label.trim() || "Unlabeled Buyout", amount: amt };
       });
     const totalBuyouts = round2(parsedBuyoutItems.reduce((s, i) => s + i.amount, 0));
 
-    const whRate = parseNumber(artist.withholdingRate);
+    const whRate = parsePercent(artist.withholdingRate, `${aName} Withholding Rate`, warnings);
     const withholdingAmount = whRate > 0 ? round2(artistPayout * (whRate / 100)) : 0;
-    const deposit = round2(parseNumber(artist.deposit));
+    const deposit = round2(parseNonNegative(artist.deposit, `${aName} Deposit`, warnings));
     const buyoutDeduction = artist.buyoutMode !== "show_expense" && totalBuyouts > 0 ? totalBuyouts : 0;
     const balanceDue = round2(artistPayout - deposit - withholdingAmount - buyoutDeduction);
 
@@ -343,8 +358,8 @@ export function computeSettlement(data: CalculationInput): ComputeOutput {
     ? round2(netProfit - totalArtistPayouts)
     : round2(netProfit - totalArtistPayouts - ccFees);
 
-  const merchGross = round2(parseNumber(data.merchGross));
-  const merchVenuePercent = parseNumber(data.merchVenuePercent);
+  const merchGross = round2(parseNonNegative(data.merchGross, "Merch Gross Sales", warnings));
+  const merchVenuePercent = parsePercent(data.merchVenuePercent, "Venue Merch %", warnings);
   warnIfNotNumeric(data.merchGross, "Merch Gross Sales", warnings);
   warnIfNotNumeric(data.merchVenuePercent, "Venue Merch %", warnings);
   const merchVenueCut = merchGross > 0 ? round2(merchGross * (merchVenuePercent / 100)) : 0;

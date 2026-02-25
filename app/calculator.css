@@ -33,7 +33,8 @@
 }
 
 .calculator-form-section .ds-input-wrapper,
-.calculator-form-section .ds-select-wrapper {
+.calculator-form-section .ds-select-wrapper,
+.calculator-form-section .ds-textarea-wrapper {
   margin-bottom: 1.25rem;
 }
 
@@ -50,6 +51,10 @@
   margin-bottom: 0;
 }
 
+.calculator-due-tonight {
+  margin-bottom: 1rem;
+}
+
 /* Results card */
 .results-card h2 {
   font-size: var(--text-xl);
@@ -58,86 +63,6 @@
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--color-border);
-}
-
-/* Results layout */
-.calculator-result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.calculator-result-row:last-of-type {
-  border-bottom: none;
-}
-
-.calculator-result-row .label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-
-.calculator-result-row .value {
-  font-family: var(--font-geist-mono), monospace;
-  font-size: var(--text-base);
-  color: var(--color-text-strong);
-  font-weight: 500;
-}
-
-.calculator-result-row.highlight {
-  background: var(--color-accent-bg);
-  margin: 0.5rem -1rem;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  border-bottom: none;
-}
-
-.calculator-result-row.highlight .label {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
-.calculator-result-row.highlight .value {
-  color: var(--color-accent);
-  font-weight: 700;
-  font-size: var(--text-lg);
-}
-
-.calculator-result-row.artist-payout {
-  background: var(--color-success-bg);
-}
-
-.calculator-result-row.artist-payout .label,
-.calculator-result-row.artist-payout .value {
-  color: var(--color-success-strong);
-}
-
-.calculator-result-row.venue-payout {
-  background: var(--color-warning-bg);
-}
-
-.calculator-result-row.venue-payout .label,
-.calculator-result-row.venue-payout .value {
-  color: var(--color-warning-strong);
-}
-
-.calculator-result-row.balance-due {
-  background: var(--color-success-bg);
-}
-
-.calculator-result-row.balance-due .label,
-.calculator-result-row.balance-due .value {
-  color: var(--color-success-strong);
-}
-
-.calculator-result-row.overpayment {
-  background: var(--color-error-bg);
-}
-
-.calculator-result-row.overpayment .label,
-.calculator-result-row.overpayment .value {
-  color: var(--color-error);
 }
 
 .artist-name-display {
@@ -179,6 +104,38 @@
   background: var(--color-error-bg);
   border: 1px solid var(--color-error-border);
   color: var(--color-error);
+}
+
+.calculator-remove-confirm {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: var(--text-sm);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error);
+}
+
+.calculator-remove-confirm p {
+  margin: 0;
+}
+
+.calculator-remove-confirm-actions {
+  margin-top: 0.625rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calculator-confirm-popover-text {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.calculator-confirm-popover-actions {
+  margin-top: 0.625rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* Loading state */
@@ -255,16 +212,6 @@
   margin-bottom: 0.125rem;
 }
 
-.calculator-result-row.tier-subtotal {
-  border-top: 1px dashed var(--color-border);
-  border-bottom: none;
-  padding-top: 0.5rem;
-}
-
-.calculator-result-row.tier-subtotal .label {
-  font-weight: 500;
-}
-
 @media (max-width: 600px) {
   .calculator-tier-row {
     grid-template-columns: 1fr 1fr;
@@ -297,14 +244,8 @@
   margin-bottom: 0.125rem;
 }
 
-.calculator-result-row.expense-subtotal {
-  border-top: 1px dashed var(--color-border);
-  border-bottom: none;
-  padding-top: 0.5rem;
-}
-
-.calculator-result-row.expense-subtotal .label {
-  font-weight: 500;
+.calculator-artist-remove {
+  margin-left: auto;
 }
 
 @media (max-width: 500px) {
@@ -315,16 +256,6 @@
   .calculator-expense-row > .ds-input-wrapper:first-child {
     grid-column: 1 / -1;
   }
-}
-
-/* Venue loss */
-.calculator-result-row.venue-loss {
-  background: var(--color-error-bg);
-}
-
-.calculator-result-row.venue-loss .label,
-.calculator-result-row.venue-loss .value {
-  color: var(--color-error);
 }
 
 /* Stale results banner */
@@ -393,18 +324,19 @@
 }
 
 .calculator-note-input {
-  font-size: var(--text-sm) !important;
-  padding: 0.35rem 0.75rem !important;
+  margin-bottom: 0;
+}
+
+.calculator-note-input .ds-input {
   color: var(--color-text-muted);
 }
 
-.calculator-note-input::placeholder {
+.calculator-note-input input::placeholder {
   font-style: italic;
 }
 
 /* General notes textarea */
-.calculator-notes-textarea {
-  resize: vertical;
+.calculator-notes-textarea .ds-textarea {
   min-height: 60px;
   line-height: 1.5;
 }
@@ -444,6 +376,10 @@
 .calculator-field-help {
   margin-top: -0.5rem;
   margin-bottom: 0.75rem;
+}
+
+.calculator-summary-breakdown {
+  margin-top: 1rem;
 }
 
 .calculator-calculate-btn {

@@ -157,26 +157,6 @@
   text-align: center;
 }
 
-.create-show-btn {
-  padding: 0.75rem 1.5rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  text-decoration: none;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.create-show-btn:hover {
-  transform: translateY(-1px);
-}
-
-.create-show-btn:active {
-  transform: translateY(0);
-}
 
 /* Shows List — one card per row, full width */
 .shows-list {
@@ -299,25 +279,6 @@
   margin-bottom: 2rem;
 }
 
-.create-show-btn-large {
-  padding: 0.875rem 1.75rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.create-show-btn-large:hover {
-  transform: translateY(-1px);
-}
-
-.create-show-btn-large:active {
-  transform: translateY(0);
-}
 
 .subscription-badge {
   display: flex;
@@ -336,7 +297,7 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .create-show-btn {
+  .ds-page-header .ds-btn {
     width: 100%;
     text-align: center;
   }

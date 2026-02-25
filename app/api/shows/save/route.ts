@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { showId, title, show_date, inputs, acknowledgments } = body;
+    const { showId, title, show_date, inputs, acknowledgments, allowDraft } = body;
 
     if (!title || !inputs) {
       return NextResponse.json(
@@ -40,22 +40,29 @@ export async function POST(request: Request) {
     };
 
     const output = computeSettlement(calculationInput);
-    if (!output.ok) {
+    let results: Record<string, unknown> | null = null;
+    let isDraft = false;
+    if (output.ok) {
+      results = {
+        ...output.result,
+        ...(acknowledgments?.length > 0 ? { acknowledgments } : {}),
+      };
+    } else if (allowDraft) {
+      isDraft = true;
+      results = acknowledgments?.length > 0 ? { acknowledgments } : null;
+    } else {
       return NextResponse.json({ success: false, error: output.error }, { status: 400 });
     }
 
-    const results = {
-      ...output.result,
-      ...(acknowledgments?.length > 0 ? { acknowledgments } : {}),
-    };
-
-    const showData = {
+    const showData: Record<string, unknown> = {
       user_id: user.id,
       title: title.trim(),
       show_date: show_date?.trim() || null,
       inputs,
-      results,
     };
+    if (results !== null) {
+      showData.results = results;
+    }
 
     if (showId) {
       const { data, error } = await supabase
@@ -70,7 +77,7 @@ export async function POST(request: Request) {
         console.error("Error updating show:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
       }
-      return NextResponse.json({ success: true, showId: data.id });
+      return NextResponse.json({ success: true, showId: data.id, isDraft });
     } else {
       const { data, error } = await supabase.from("shows").insert([showData]).select().single();
 
@@ -78,7 +85,7 @@ export async function POST(request: Request) {
         console.error("Error inserting show:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
       }
-      return NextResponse.json({ success: true, showId: data.id });
+      return NextResponse.json({ success: true, showId: data.id, isDraft });
     }
   } catch (err) {
     console.error("Save show error:", err);
