@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
 import ManageBillingButton from "@/app/dashboard/ManageBillingButton";
+import ExportAllDataButton from "@/app/dashboard/ExportAllDataButton";
 import { ThemeToggle } from "./ThemeToggle";
 import "@/app/dashboard/dashboard.css";
 
@@ -108,6 +109,7 @@ export function AppAccountMenu({ initialData }: AppAccountMenuProps) {
       </div>
 
       <div className="dashboard-account-menu-actions">
+        {hasAccess && <ExportAllDataButton />}
         {hasAccess && isStripeSource && <ManageBillingButton />}
         <form action="/auth/signout" method="post">
           <Button type="submit" variant="danger" className="ds-btn-block">
