@@ -17,10 +17,10 @@
   --color-bg-2: #16213e;
   --color-bg-3: #0f3460;
   --color-surface: rgba(255, 255, 255, 0.03);
-  --color-surface-strong: var(--color-border);
+  --color-surface-strong: rgba(255, 255, 255, 0.07);
 
   /* Borders */
-  --color-border: var(--color-border);
+  --color-border: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.2);
   --color-input-border: rgba(255, 255, 255, 0.15);
 
@@ -48,12 +48,12 @@
   --color-accent-bg-hover: rgba(183, 148, 244, 0.2);
   --color-accent-border: rgba(183, 148, 244, 0.3);
   --color-accent-border-hover: rgba(183, 148, 244, 0.5);
-  --color-success-bg: var(--color-success-bg);
+  --color-success-bg: rgba(72, 187, 120, 0.22);
   --color-success-bg-hover: rgba(72, 187, 120, 0.25);
-  --color-success-border: var(--color-success-border);
+  --color-success-border: rgba(72, 187, 120, 0.45);
   --color-success-border-hover: rgba(72, 187, 120, 0.5);
-  --color-warning-bg: var(--color-warning-bg);
-  --color-warning-border: var(--color-warning-border);
+  --color-warning-bg: rgba(237, 137, 54, 0.2);
+  --color-warning-border: rgba(237, 137, 54, 0.45);
   --color-error-bg: rgba(252, 129, 129, 0.15);
   --color-error-border: rgba(252, 129, 129, 0.3);
 

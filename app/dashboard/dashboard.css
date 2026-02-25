@@ -10,7 +10,6 @@
 .dashboard-card {
   border-radius: var(--radius-2xl);
   padding: 2.5rem;
-  max-width: 540px;
   width: 100%;
   box-shadow: var(--shadow-card);
 }
@@ -77,31 +76,15 @@
   border-top: 1px solid var(--color-border);
 }
 
-.dashboard-account-menu-actions .action-btn {
-  width: 100%;
-}
-
 .dashboard-account-menu-actions form {
   width: 100%;
+  display: flex;
+  min-width: 0;
 }
 
-.action-btn {
+.dashboard-account-menu-actions form .ds-btn {
   width: 100%;
-  padding: 1rem;
-  font-size: var(--text-base);
-  font-weight: 600;
-  font-family: inherit;
-  border: none;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  text-decoration: none;
-  display: inline-block;
-  text-align: center;
-}
-
-.action-btn:active {
-  transform: translateY(0);
+  min-width: 0;
 }
 
 /* Subscription Prompt */
@@ -195,16 +178,17 @@
   transform: translateY(0);
 }
 
-/* Shows List */
+/* Shows List — one card per row, full width */
 .shows-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
-/* Show Card */
+/* Show Card — full width row */
 .show-card {
+  width: 100%;
   border-radius: var(--radius-xl);
   padding: 1.5rem;
   display: flex;
@@ -232,30 +216,21 @@
   font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-text-strong);
-  margin-bottom: 0.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-bottom: 0.125rem;
+  word-break: break-word;
 }
 
 .show-artist {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  margin-bottom: 0.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-bottom: 0.125rem;
+  word-break: break-word;
 }
 
 .show-timestamp {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   font-family: var(--font-geist-mono), monospace;
-}
-
-.open-show-btn {
-  white-space: nowrap;
-  margin-left: 1rem;
 }
 
 .show-card-actions {
@@ -281,9 +256,14 @@
 
 .share-show-disabled {
   font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+/* No share link: subtle status text, not a badge */
+.show-share-status-none {
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
-  font-family: var(--font-geist-mono), monospace;
-  padding: 0.5rem 0;
+  font-weight: 500;
 }
 
 /* Empty State */
@@ -361,9 +341,6 @@
     text-align: center;
   }
 
-  .shows-list {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 500px) {
@@ -388,19 +365,12 @@
     gap: 1rem;
   }
 
-  .open-show-btn {
-    margin-left: 0;
-    width: 100%;
-    text-align: center;
-  }
-
   .show-card-actions {
     width: 100%;
     align-items: stretch;
   }
 
-  .share-show-btn,
-  .share-show-disabled {
+  .share-show-btn {
     width: 100%;
     text-align: center;
   }

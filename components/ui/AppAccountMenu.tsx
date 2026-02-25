@@ -69,7 +69,7 @@ export function AppAccountMenu({ initialData }: AppAccountMenuProps) {
         </div>
         <div className="dashboard-account-menu-actions">
           <form action="/auth/signout" method="post">
-            <Button type="submit" variant="danger" className="action-btn">
+            <Button type="submit" variant="danger" className="ds-btn-block">
               Sign Out
             </Button>
           </form>
@@ -110,7 +110,7 @@ export function AppAccountMenu({ initialData }: AppAccountMenuProps) {
       <div className="dashboard-account-menu-actions">
         {hasAccess && isStripeSource && <ManageBillingButton />}
         <form action="/auth/signout" method="post">
-          <Button type="submit" variant="danger" className="action-btn">
+          <Button type="submit" variant="danger" className="ds-btn-block">
             Sign Out
           </Button>
         </form>

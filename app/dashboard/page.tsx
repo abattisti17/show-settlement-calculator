@@ -7,12 +7,12 @@ import { AppAccountMenu } from "@/components/ui/AppAccountMenu";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { getEntitlementDetails } from "@/lib/access/entitlements";
 import { getUserSubscription } from "@/lib/stripe/subscription";
 import { buildPageMetadata } from "@/lib/seo";
 import SubscribeButton from "./SubscribeButton";
-import ShareLinkCopyButton from "./ShareLinkCopyButton";
+import { DashboardToastProvider } from "./DashboardToast";
+import CopyShareLinkButton from "./CopyShareLinkButton";
 import "./dashboard.css";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -119,43 +119,40 @@ export default async function DashboardPage() {
           <>
             {/* Shows List */}
             {userShows.length > 0 ? (
-              <div className="shows-list">
-                {userShows.map((show) => {
-                  const shareLink = shareLinksByShowId.get(show.id);
+              <DashboardToastProvider>
+                <div className="shows-list">
+                  {userShows.map((show) => {
+                    const shareLink = shareLinksByShowId.get(show.id);
 
-                  return (
-                    <Card key={show.id} className="show-card" padding="md">
-                      <Link
-                        href={`/?showId=${show.id}`}
-                        className="show-card-link-cover"
-                      >
-                        Open {show.title}
-                      </Link>
-                      <div className="show-card-content">
-                        <h3 className="show-title">{show.title}</h3>
-                        {show.inputs?.artistName && (
-                          <p className="show-artist">Artist: {show.inputs.artistName}</p>
-                        )}
-                        <p className="show-timestamp">
-                          Last saved: {formatRelativeTime(show.updated_at)}
-                        </p>
-                      </div>
-                      <div className="show-card-actions">
-                        <Button as="a" href={`/?showId=${show.id}`} variant="secondary" size="sm" className="open-show-btn">
-                          Open Show
-                        </Button>
-                        {shareLink?.is_active ? (
-                          <ShareLinkCopyButton token={shareLink.token} />
-                        ) : shareLink ? (
-                          <Badge variant="warning" className="share-show-disabled">Share (inactive)</Badge>
-                        ) : (
-                          <Badge variant="default" className="share-show-disabled">No share link</Badge>
-                        )}
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+                    return (
+                      <Card key={show.id} className="show-card" padding="md">
+                        <Link
+                          href={`/?showId=${show.id}`}
+                          className="show-card-link-cover"
+                        >
+                          Open {show.title}
+                        </Link>
+                        <div className="show-card-content">
+                          <h3 className="show-title">{show.title}</h3>
+                          {show.inputs?.artistName && (
+                            <p className="show-artist">Artist: {show.inputs.artistName}</p>
+                          )}
+                          <p className="show-timestamp">
+                            Last saved: {formatRelativeTime(show.updated_at)}
+                          </p>
+                        </div>
+                        <div className="show-card-actions">
+                          <CopyShareLinkButton
+                            showId={show.id}
+                            initialToken={shareLink?.token}
+                            initialIsActive={shareLink?.is_active}
+                          />
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </DashboardToastProvider>
             ) : (
               <Card className="empty-state" variant="bordered" padding="lg">
                 <div className="empty-state-icon">

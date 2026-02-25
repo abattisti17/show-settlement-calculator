@@ -42,7 +42,7 @@ export default function SubscribeButton() {
         onClick={handleSubscribe}
         disabled={loading}
         variant="primary"
-        className="action-btn"
+        className="ds-btn-block"
       >
         {loading ? "Loading..." : "Subscribe Now"}
       </Button>

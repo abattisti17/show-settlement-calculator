@@ -25,13 +25,14 @@ export default function ManageBillingButton() {
         throw new Error(data.error || "Failed to create portal session");
       }
 
-      // Redirect to Stripe Customer Portal
+      // Open Stripe Customer Portal in new tab
       if (data.url) {
-        window.location.href = data.url;
+        window.open(data.url, "_blank", "noopener,noreferrer");
       }
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
       setLoading(false);
     }
   }
@@ -42,7 +43,7 @@ export default function ManageBillingButton() {
         onClick={handleManageBilling}
         disabled={loading}
         variant="secondary"
-        className="action-btn"
+        className="ds-btn-block"
       >
         {loading ? "Loading..." : "Manage Billing"}
       </Button>

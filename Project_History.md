@@ -1,6 +1,53 @@
 # Project History (append-only)
 
 ---
+### 2026-02-24 — Dark theme token fix (border + surface-strong)
+**Context:** Dark theme had circular refs for --color-border and --color-surface-strong, so secondary buttons (e.g. Manage Billing) and borders had no distinct appearance.
+**Decision:** Define explicit values in default :root so the token layer is correct; light theme unchanged (it already overrides these).
+**Changes:** `app/globals.css`: --color-border set to rgba(255,255,255,0.1); --color-surface-strong set to rgba(255,255,255,0.07).
+**Supabase impact:** None.
+**Rollback:** Revert the two token lines in app/globals.css to var(--color-border) / var(--color-border).
+---
+### 2026-02-24 — Manage Billing contrast + account/dashboard via dsys
+**Context:** Manage Billing button had low contrast (muted text on dark surface). User asked for fixes and for dashboard/account changes to use the design system.
+**Decision:** Fix secondary/ghost button contrast in dsys; replace custom .action-btn with dsys .ds-btn-block.
+**Changes:**
+- `components/ui/Button.css`: Secondary and ghost variants now use `color: var(--color-text)` instead of `--color-text-muted` for sufficient contrast; added `.ds-btn-block { width: 100%; }`.
+- `components/ui/AppAccountMenu.tsx`: Sign Out buttons use `className="ds-btn-block"` instead of `action-btn`.
+- `app/dashboard/ManageBillingButton.tsx`: uses `className="ds-btn-block"`.
+- `app/dashboard/SubscribeButton.tsx`: uses `className="ds-btn-block"`.
+- `app/dashboard/dashboard.css`: removed `.action-btn` and `.dashboard-account-menu-actions .action-btn` style blocks.
+**Supabase impact:** None.
+**Rollback:** Revert Button.css, AppAccountMenu.tsx, ManageBillingButton.tsx, SubscribeButton.tsx, dashboard.css; restore action-btn styles.
+---
+### 2026-02-24 — Unified Copy link button + toast; cards full width
+**Context:** User wanted one "Copy link" button per show: copy if link exists, generate then copy if not; show progress toast while generating. Cards should span full row.
+**Decision:** Single CopyShareLinkButton for every show; DashboardToastProvider + toast UI; create share link via API when missing (and activate if inactive); explicit .show-card width: 100%.
+**Changes:**
+- Added `app/dashboard/DashboardToast.tsx` and `DashboardToast.css`: context + fixed toast with "Generating link…" / "Copied!" / "Link ready — copied!".
+- Added `app/dashboard/CopyShareLinkButton.tsx`: one button that copies when link active, or calls POST /api/share-links/create (then toggle if inactive), then copies and shows toast.
+- Updated `app/dashboard/page.tsx`: wrapped shows list in DashboardToastProvider; replaced ShareLinkCopyButton/Badge/span with CopyShareLinkButton for all shows; removed Badge import.
+- Updated `app/dashboard/dashboard.css`: .show-card given width: 100%; responsive rule simplified to .share-show-btn only.
+**Supabase impact:** None.
+**Rollback:** Revert page.tsx, dashboard.css; delete DashboardToast.tsx/.css, CopyShareLinkButton.tsx; restore ShareLinkCopyButton and Badge/span share states.
+---
+### 2026-02-24 — Better "No share link" state on dashboard
+**Context:** "No share link" was shown as a default Badge with monospace styling and looked jank.
+**Decision:** Show "No share link" as subtle status text instead of a badge; reduce monospace on disabled share states.
+**Changes:**
+- `app/dashboard/page.tsx`: "No share link" now renders as `<span className="show-share-status show-share-status-none">` instead of Badge.
+- `app/dashboard/dashboard.css`: Added `.show-share-status-none` (muted, normal font, sm); `.share-show-disabled` no longer uses monospace; responsive rule includes `.show-share-status-none`.
+**Supabase impact:** None.
+**Rollback:** Revert app/dashboard/page.tsx and app/dashboard/dashboard.css.
+---
+### 2026-02-24 — Dashboard show cards full-width rows, no text truncation
+**Context:** User wanted dashboard show cards to span the full row (rows of shows, not grid) so text is not truncated.
+**Decision:** Use single-column layout for shows list; allow title/artist text to wrap; make subscription card full width.
+**Changes:**
+- `app/dashboard/dashboard.css`: `.shows-list` changed from grid to `flex; flex-direction: column`; `.show-title` and `.show-artist` truncation removed (use `word-break: break-word`); `.dashboard-card` `max-width: 540px` removed; removed redundant `.shows-list` rule in 768px media query.
+**Supabase impact:** None.
+**Rollback:** Revert app/dashboard/dashboard.css.
+---
 ### 2026-02-24 — Full dsys for calculator footer (SectionFooter + AuthorCard)
 **Context:** Calculator footer used Card but had hardcoded background, spacing, avatar size, and line-height.
 **Decision:** Add missing dsys tokens and two new components so the footer is fully design-system driven.
